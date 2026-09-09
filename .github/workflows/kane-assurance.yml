@@ -25,7 +25,7 @@ on:
 
 env:
   KANE_CLI_VERSION: "@testmuai/kane-cli"   # pin e.g. @testmuai/kane-cli@0.7.2 once you've validated a release
-  PRD_SOURCE_PATH: "docs/prd/bank-demo-prd.md"
+  PRD_SOURCE_PATH: "bank-demo-prd.md"
   PRD_SOURCE_ID: "bank-demo-prd"
   VARIABLES_SEED: "config/kane-variables.seed.json"
 
