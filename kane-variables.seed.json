@@ -1,0 +1,18 @@
+{
+  "login_url": { "value": "https://qaplayground.com/bank/login" },
+  "base_url": { "value": "https://qaplayground.com/bank/login" },
+  "standard_user": { "value": "standard_user" },
+  "locked_user": { "value": "locked_user" },
+  "frozen_user": { "value": "frozen_user" },
+  "overdraft_user": { "value": "overdraft_user" },
+  "slow_user": { "value": "slow_user" },
+  "error_user": { "value": "error_user" },
+  "admin_user": { "value": "admin_user" },
+  "standard_password": { "value": "bank_sauce" },
+  "locked_password": { "value": "bank_sauce" },
+  "frozen_password": { "value": "bank_sauce" },
+  "overdraft_password": { "value": "bank_sauce" },
+  "slow_password": { "value": "bank_sauce" },
+  "error_password": { "value": "bank_sauce" },
+  "admin_password": { "value": "admin_sauce" }
+}

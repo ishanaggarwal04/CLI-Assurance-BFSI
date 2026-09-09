@@ -1,0 +1,295 @@
+name: Kane CLI Assurance — Bank Demo (BFSI)
+
+# Manual trigger by default: this pipeline calls the KaneAI agent (context extract,
+# design tests) which consumes credits on every run. Add a push/schedule trigger
+# yourself once you're happy with the credit spend per run.
+on:
+  workflow_dispatch:
+    inputs:
+      login_url:
+        description: "Bank Demo entry point"
+        required: false
+        default: "https://qaplayground.com/bank/login"
+      shard_count:
+        description: "Number of parallel GitHub Actions runners (extra runners) to fan the test suite across"
+        required: false
+        default: "4"
+      parallel_per_shard:
+        description: "kane-cli testrun --parallel workers inside each shard runner"
+        required: false
+        default: "4"
+      max_tests_per_usecase:
+        description: "design tests --max budget ceiling per use-case"
+        required: false
+        default: "10"
+
+env:
+  KANE_CLI_VERSION: "@testmuai/kane-cli"   # pin e.g. @testmuai/kane-cli@0.7.2 once you've validated a release
+  PRD_SOURCE_PATH: "docs/prd/bank-demo-prd.md"
+  PRD_SOURCE_ID: "bank-demo-prd"
+  VARIABLES_SEED: "config/kane-variables.seed.json"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Ingest the PRD, extract use-cases, design ACs/scenarios/tests, and
+  #    BULK-APPROVE everything the agent proposed. kane-cli deliberately has no
+  #    built-in "auto-approve" switch (trust promotion is meant to be a human
+  #    decision) — the supported non-interactive path is to script the verdicts
+  #    file yourself. That's what this job does: every derived use-case, AC,
+  #    scenario and test produced by the agent is approved automatically, with
+  #    the reason "bulk-approved by CI policy" recorded on each verdict for the
+  #    audit trail. If you want a real reviewer in the loop before tests go
+  #    live, gate this job behind an environment with required reviewers
+  #    instead of relying on the bulk-approve step.
+  # ---------------------------------------------------------------------------
+  design-and-review:
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.shard-plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Kane CLI
+        run: npm install -g ${{ env.KANE_CLI_VERSION }}
+
+      - name: Login (basic auth, non-interactive)
+        env:
+          LT_USERNAME: ${{ secrets.LT_USERNAME }}
+          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
+        run: kane-cli login --username "$LT_USERNAME" --access-key "$LT_ACCESS_KEY"
+
+      - name: Ingest PRD + extract use-cases (headless, defaults auto-taken)
+        run: |
+          set -euo pipefail
+          # --mode override lands the source, then runs extraction headlessly,
+          # auto-taking every default (including high-risk ones — each is
+          # flagged in the commit record for later audit). This is the
+          # unattended equivalent of the interactive extract chat.
+          kane-cli context ingest "$PRD_SOURCE_PATH" --as "$PRD_SOURCE_ID" --mode override
+
+      - name: Bulk-approve extracted use-cases
+        run: |
+          set -euo pipefail
+          kane-cli context list --type usecase --inferred --json > usecases.ndjson || true
+          if [ -s usecases.ndjson ]; then
+            jq -s '[ .[] | {
+              ref: (.id // .ref // .logical_id),
+              resolution: "approved",
+              reason: "bulk-approved by CI run '"${GITHUB_RUN_ID}"' — BFSI pipeline policy (kane-cli has no built-in auto-approve; this is a scripted, recorded decision, not silent trust)"
+            } ]' usecases.ndjson > verdicts-usecases.json
+            kane-cli context review --verdicts verdicts-usecases.json --json
+          else
+            echo "No derived use-cases to approve (nothing new extracted)."
+          fi
+
+      - name: Design tests for every trusted use-case
+        run: |
+          set -euo pipefail
+          kane-cli context list --type usecase --json | jq -r '.id // .ref // .logical_id' | sort -u > usecase_refs.txt
+          while IFS= read -r uc; do
+            [ -z "$uc" ] && continue
+            echo "== designing: $uc =="
+            # --mode override: unattended, auto-takes every design-session default.
+            # A use-case that's already designed & current exits 2 — treat as
+            # idempotent no-op so re-runs of this workflow don't fail the job.
+            kane-cli design tests --use-case "$uc" --mode override --max "${{ inputs.max_tests_per_usecase }}" \
+              || { code=$?; if [ "$code" -eq 2 ]; then echo "  (already designed — skipping)"; else exit "$code"; fi; }
+          done < usecase_refs.txt
+
+      - name: Bulk-approve designed ACs, scenarios and tests
+        run: |
+          set -euo pipefail
+          kane-cli context list --inferred --json > derived.ndjson || true
+          if [ -s derived.ndjson ]; then
+            jq -s '[ .[] | {
+              ref: (.id // .ref // .logical_id),
+              resolution: "approved",
+              reason: "bulk-approved by CI run '"${GITHUB_RUN_ID}"' — BFSI pipeline policy, design-stage output"
+            } ]' derived.ndjson > verdicts-design.json
+            kane-cli context review --verdicts verdicts-design.json --json
+          else
+            echo "Nothing left derived — design output already reviewed."
+          fi
+
+      - name: Compute shard plan
+        id: shard-plan
+        run: |
+          echo "shards=$(jq -n -c '[range(0; ${{ inputs.shard_count }})]')" >> "$GITHUB_OUTPUT"
+
+      - name: Package the context store for downstream jobs
+        run: tar -czf context-store.tar.gz .context
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: designed-tests
+          path: .testmuai/tests/**/*_test.md
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: context-store
+          path: context-store.tar.gz
+
+  # ---------------------------------------------------------------------------
+  # 2. Fan the designed tests out across N extra GitHub Actions runners
+  #    (shard_count), and within each runner run kane-cli testrun with its own
+  #    --parallel worker pool. Total concurrency ≈ shard_count × parallel_per_shard.
+  # ---------------------------------------------------------------------------
+  shard-tests:
+    needs: design-and-review
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJson(needs.design-and-review.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: browser-actions/setup-chrome@v1
+
+      - name: Install Kane CLI
+        run: npm install -g ${{ env.KANE_CLI_VERSION }}
+
+      - name: Login (basic auth, non-interactive)
+        env:
+          LT_USERNAME: ${{ secrets.LT_USERNAME }}
+          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
+        run: kane-cli login --username "$LT_USERNAME" --access-key "$LT_ACCESS_KEY"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: designed-tests
+          path: .testmuai/tests
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: context-store
+
+      - name: Restore context store
+        run: tar -xzf context-store.tar.gz
+
+      - name: Build run-time variables file
+        run: |
+          set -euo pipefail
+          # kane-cli testrun run has no --variables-file flag (that flag only
+          # exists on `kane-cli run` / `testmd run`). Variables reach testrun
+          # via the project-local auto-load path instead: any *.json dropped
+          # in .testmuai/variables/ is picked up automatically for every
+          # kane-cli invocation made from this directory.
+          mkdir -p .testmuai/variables
+          jq --arg url "${{ inputs.login_url }}" \
+             '.login_url.value = $url | .base_url.value = $url' \
+             "$VARIABLES_SEED" > .testmuai/variables/runtime.json
+
+      - name: Select this shard's tests
+        id: select
+        run: |
+          set -euo pipefail
+          mapfile -t ALL_TESTS < <(find .testmuai/tests -name '*_test.md' | sort)
+          TOTAL=${#ALL_TESTS[@]}
+          SHARD_COUNT=${{ inputs.shard_count }}
+          THIS_SHARD=${{ matrix.shard }}
+          SELECTED=()
+          for i in "${!ALL_TESTS[@]}"; do
+            if (( i % SHARD_COUNT == THIS_SHARD )); then
+              SELECTED+=("${ALL_TESTS[$i]}")
+            fi
+          done
+          echo "Shard $THIS_SHARD / $SHARD_COUNT: ${#SELECTED[@]} of $TOTAL tests"
+          printf '%s\n' "${SELECTED[@]}" > shard_files.txt
+          if [ "${#SELECTED[@]}" -eq 0 ]; then
+            echo "has_tests=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_tests=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run this shard (author + replay, parallel workers)
+        if: steps.select.outputs.has_tests == 'true'
+        env:
+          LT_USERNAME: ${{ secrets.LT_USERNAME }}
+          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          mapfile -t SHARD_FILES < shard_files.txt
+          kane-cli testrun run "${SHARD_FILES[@]}" \
+            --parallel "${{ inputs.parallel_per_shard }}" \
+            --headless \
+            --on-failure continue \
+            --username "$LT_USERNAME" \
+            --access-key "$LT_ACCESS_KEY" \
+            --name "bank-demo-shard-${{ matrix.shard }}-run-${{ github.run_id }}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-shard-${{ matrix.shard }}
+          path: .testmuai/evidence/*.evidence
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
+  # 3. Aggregate: pull every shard's evidence pack, print a coverage summary,
+  #    and gate the pipeline on whether every shard actually passed.
+  # ---------------------------------------------------------------------------
+  aggregate:
+    needs: [design-and-review, shard-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Kane CLI
+        run: npm install -g ${{ env.KANE_CLI_VERSION }}
+
+      - name: Login (basic auth, non-interactive)
+        env:
+          LT_USERNAME: ${{ secrets.LT_USERNAME }}
+          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
+        run: kane-cli login --username "$LT_USERNAME" --access-key "$LT_ACCESS_KEY"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: context-store
+
+      - run: tar -xzf context-store.tar.gz
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: evidence-shard-*
+          path: evidence
+          merge-multiple: true
+
+      - name: Coverage summary
+        run: |
+          set -euo pipefail
+          echo "## Kane CLI coverage — Bank Demo (BFSI)" >> "$GITHUB_STEP_SUMMARY"
+          kane-cli cover --json > coverage.json || true
+          if [ -s coverage.json ]; then
+            jq -r '. as $c | "Proven vs owed summary written to coverage.json (see artifact)."' coverage.json >> "$GITHUB_STEP_SUMMARY" || true
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Evidence packs collected:" >> "$GITHUB_STEP_SUMMARY"
+          ls -1 evidence/*.evidence 2>/dev/null | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY" || echo "- none found" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.json
+          if-no-files-found: ignore
+
+      - name: Gate on shard results
+        run: |
+          if [ "${{ needs.shard-tests.result }}" != "success" ]; then
+            echo "One or more test shards failed — failing the pipeline."
+            exit 1
+          fi
+          echo "All shards passed."
