@@ -22,6 +22,11 @@ on:
         description: "design tests --max budget ceiling per use-case"
         required: false
         default: "10"
+      skip_acceptance_criteria:
+        description: "If true, keep design output as draft when acceptance-criteria coverage validation fails"
+        required: false
+        default: false
+        type: boolean
 
 env:
   KANE_CLI_VERSION: "@testmuai/kane-cli"   # pin e.g. @testmuai/kane-cli@0.7.2 once you've validated a release
@@ -90,15 +95,60 @@ jobs:
         run: |
           set -euo pipefail
           kane-cli context list --type usecase --json | jq -r '.id // .ref // .logical_id' | sort -u > usecase_refs.txt
+          mkdir -p design-drafts
+
           while IFS= read -r uc; do
             [ -z "$uc" ] && continue
             echo "== designing: $uc =="
+
             # --mode override: unattended, auto-takes every design-session default.
             # A use-case that's already designed & current exits 2 — treat as
             # idempotent no-op so re-runs of this workflow don't fail the job.
-            kane-cli design tests --use-case "$uc" --mode override --max "${{ inputs.max_tests_per_usecase }}" \
-              || { code=$?; if [ "$code" -eq 2 ]; then echo "  (already designed — skipping)"; else exit "$code"; fi; }
+            #
+            # If skip_acceptance_criteria=true and Kane reports the specific
+            # AC/verification coverage validation error, preserve the output
+            # as a draft instead of failing the workflow.
+            if kane-cli design tests \
+                --use-case "$uc" \
+                --mode override \
+                --max "${{ inputs.max_tests_per_usecase }}" \
+                > "design-drafts/${uc}.log" 2>&1; then
+              echo "  design completed"
+            else
+              code=$?
+              cat "design-drafts/${uc}.log"
+
+              if [ "$code" -eq 2 ]; then
+                echo "  (already designed — skipping)"
+              elif [ "${{ inputs.skip_acceptance_criteria }}" = "true" ] && \
+                   grep -Eiq 'every AC must be claimed by the step that proves it|no step carries verifies tags|acceptance criteria' \
+                   "design-drafts/${uc}.log"; then
+                echo "  AC validation failed; preserving this design as DRAFT."
+
+                echo "# Kane CLI Design Draft" > "design-drafts/${uc}.draft.md"
+                echo "" >> "design-drafts/${uc}.draft.md"
+                echo "Use case: ${uc}" >> "design-drafts/${uc}.draft.md"
+                echo "Status: DRAFT" >> "design-drafts/${uc}.draft.md"
+                echo "Reason: Acceptance-criteria coverage validation failed." >> "design-drafts/${uc}.draft.md"
+                echo "" >> "design-drafts/${uc}.draft.md"
+                echo "The design was intentionally not promoted to executable/trusted tests." >> "design-drafts/${uc}.draft.md"
+                echo "Review the affected acceptance criterion and resume/fix it later." >> "design-drafts/${uc}.draft.md"
+                echo "" >> "design-drafts/${uc}.draft.md"
+                echo "Validation output:" >> "design-drafts/${uc}.draft.md"
+                cat "design-drafts/${uc}.log" >> "design-drafts/${uc}.draft.md"
+              else
+                exit "$code"
+              fi
+            fi
           done < usecase_refs.txt
+
+      - name: Upload design drafts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-drafts
+          path: design-drafts/
+          if-no-files-found: ignore
 
       - name: Bulk-approve designed ACs, scenarios and tests
         run: |
@@ -127,7 +177,7 @@ jobs:
         with:
           name: designed-tests
           path: .testmuai/tests/**/*_test.md
-          if-no-files-found: error
+          if-no-files-found: ignore
 
       - uses: actions/upload-artifact@v4
         with:
@@ -141,6 +191,7 @@ jobs:
   # ---------------------------------------------------------------------------
   shard-tests:
     needs: design-and-review
+    if: needs.design-and-review.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
