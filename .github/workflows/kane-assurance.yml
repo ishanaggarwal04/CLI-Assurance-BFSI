@@ -278,6 +278,10 @@ jobs:
           LT_USERNAME: ${{ secrets.LT_USERNAME }}
           LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
         run: |
+          # GitHub runs this step as `bash -e`, and `set -uo pipefail` does not
+          # turn -e off: without `set +e` the step dies at the kane-cli line the
+          # moment any test fails, before the checks below can read the result.
+          set +e
           set -uo pipefail
           mapfile -t SHARD_FILES < shard_files.txt
           kane-cli testrun run "${SHARD_FILES[@]}" \
