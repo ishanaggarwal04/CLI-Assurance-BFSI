@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"The login interface provides a clearly labeled Sign In control.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"clearly labeled Sign In control"}}}

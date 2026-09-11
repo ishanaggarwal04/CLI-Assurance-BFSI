@@ -1,0 +1,9 @@
+anchor: ac-28
+combinatorial:
+  reason: Applied equivalence partitioning over the role/persona input and auth/permission reasoning because the source separates standard_user from admin_user outcomes. Used covering_array at risk-gated strength 3 because auth applies; it degraded to effective strength 1 because there is only one relevant input (persona), so the authoritative combo set enumerated persona=standard_user. Outcome differs from admin_user, so this remains a separate scenario rather than a parameter on a shared path.
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied equivalence partitioning over the role/persona input and auth/permission reasoning because the source separates standard_user from admin_user outcomes. Used covering_array at risk-gated strength 3 because auth applies; it degraded to effective strength 1 because there is only one relevant input (persona), so the authoritative combo set enumerated persona=standard_user. Outcome differs from admin_user, so this remains a separate scenario rather than a parameter on a shared path.

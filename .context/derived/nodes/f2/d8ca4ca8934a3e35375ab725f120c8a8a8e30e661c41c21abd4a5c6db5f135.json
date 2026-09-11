@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"When authenticated as error_user, a reachable loan-related banking view exposes the documented wrong-loan-total condition.","kind":"presence","risk":"med","derived":true,"expected_answer":{"operator":"exists","operand":"a displayed loan total for error_user that conflicts with supporting loan data in the same view"}}}

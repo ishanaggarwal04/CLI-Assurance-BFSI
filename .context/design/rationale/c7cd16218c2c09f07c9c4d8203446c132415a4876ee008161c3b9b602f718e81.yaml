@@ -1,0 +1,9 @@
+anchor: ac-50
+combinatorial:
+  reason: because auth applies, but no combinatorial input matrix was needed because the persona alone determines the outcome class.
+  strength: 3
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied equivalence partitioning to standard_user versus admin_user persona outcomes; applied auth/permission because the distinction is role-based; applied negative/error because the path proves forbidden access is not available to a non-admin. Risk gate implied strength=3 because auth applies, but no combinatorial input matrix was needed because the persona alone determines the outcome class.

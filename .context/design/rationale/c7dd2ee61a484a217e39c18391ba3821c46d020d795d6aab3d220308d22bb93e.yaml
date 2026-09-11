@@ -1,0 +1,9 @@
+anchor: ac-61
+combinatorial:
+  reason: because the resolved state contains money-facing information, but no combinatorial input matrix was needed because the persona class alone defines this path.
+  strength: 3
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied equivalence partitioning to the documented slow_user persona because it represents intentionally slow-loading behavior; applied state/flow because the scenario must traverse a loading state into the resolved dashboard; applied negative/error reasoning to ensure the surface does not appear permanently broken. Risk gate implied strength=3 because the resolved state contains money-facing information, but no combinatorial input matrix was needed because the persona class alone defines this path.

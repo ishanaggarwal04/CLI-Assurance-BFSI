@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"Submitting valid standard_user credentials changes the state from the unauthenticated login state to an authenticated session.","kind":"state-transition","risk":"high","derived":true,"expected_answer":{"operator":"equals","baseline":"unauthenticated login state","operand":"authenticated session"}}}

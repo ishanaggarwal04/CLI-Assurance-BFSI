@@ -8,3 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+# kane-cli run output (not source) — evidence, generated automation code,
+# and run-time variables. CI publishes these to workflow artifacts + the
+# test-results branch instead of committing them alongside the test.md files.
+.testmuai/evidence/
+.testmuai/tests/output-*/
+.testmuai/variables/

@@ -1,0 +1,9 @@
+anchor: ac-14
+combinatorial:
+  reason: was risk-judged because auth applies, but the effective interaction reduced to a single representative credential partition in this path.
+  strength: 3
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Techniques: eqp for the valid active-credential partition, auth for the authentication boundary, and state_flow for the unauthenticated-to-authenticated transition. Web form and auth-gated profiles applied. No covering array was needed because outcome-changing credential states were split into separate scenarios; strength=3 was risk-judged because auth applies, but the effective interaction reduced to a single representative credential partition in this path.'

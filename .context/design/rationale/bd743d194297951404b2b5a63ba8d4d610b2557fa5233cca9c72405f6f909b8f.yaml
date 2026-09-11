@@ -1,0 +1,9 @@
+anchor: ac-34
+combinatorial:
+  reason: Applied equivalence partitioning over invalid monetary input classes and negative/error technique because the PRD requires monetary inputs to obey numeric and formatting rules. Risk-gated interaction strength was 3 because money and data-loss apply, but the scenario intentionally isolates one invalid input class rather than combining unrelated variables.
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied equivalence partitioning over invalid monetary input classes and negative/error technique because the PRD requires monetary inputs to obey numeric and formatting rules. Risk-gated interaction strength was 3 because money and data-loss apply, but the scenario intentionally isolates one invalid input class rather than combining unrelated variables.

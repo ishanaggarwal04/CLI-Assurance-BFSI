@@ -1,0 +1,16 @@
+---
+assurance:
+  id: t-17
+  base: sha256:9e39b1043460d1d7bd81ef82b57fc7bd3db3e55a63b0225547c6b6d8f1542122
+---
+# Keep the funding operation unavailable to an unauthenticated visitor
+
+> Prove that a user without an authenticated session cannot use protected balance-increase functionality as an authenticated user.
+
+## Step 1
+
+Open https://qaplayground.com/bank/login in a fresh browser session and remain unauthenticated.
+
+## Step 2 @verifies ac-48
+
+From the unauthenticated experience, inspect the visible page and any normal visible navigation available without signing in for access into banking functionality, then assert no authenticated banking page and no deposit, add-funds, or equivalent balance-increase control becomes available.

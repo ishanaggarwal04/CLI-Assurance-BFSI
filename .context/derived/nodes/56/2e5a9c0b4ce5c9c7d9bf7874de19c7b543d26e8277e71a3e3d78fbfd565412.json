@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"Successful authentication as admin_user changes the session from the unauthenticated login state to the intended administrative view.","kind":"state-transition","risk":"high","derived":true,"expected_answer":{"operator":"equals","baseline":"Unauthenticated login state","operand":"Authenticated administrative view for admin_user"}}}

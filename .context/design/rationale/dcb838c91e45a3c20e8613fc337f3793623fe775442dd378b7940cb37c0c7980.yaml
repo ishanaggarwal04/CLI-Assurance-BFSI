@@ -1,0 +1,9 @@
+anchor: ac-49
+combinatorial:
+  reason: because money applies, but no combinatorial input matrix was needed because the persona state itself defines the edge case.
+  strength: 3
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied equivalence partitioning to the overdraft_user persona because it represents a distinct negative-balance state; applied state/flow because the path spans dashboard to related banking views; applied currency/money-state reasoning because financial values must stay consistent across views. Risk gate implied strength=3 because money applies, but no combinatorial input matrix was needed because the persona state itself defines the edge case.

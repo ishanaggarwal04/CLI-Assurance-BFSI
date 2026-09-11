@@ -1,0 +1,9 @@
+anchor: ac-22
+combinatorial:
+  reason: 'Techniques: eqp + state_flow. Used the standard_user full-access persona as the representative authenticated session because the PRD documents it as the normal/full-access experience and does not distinguish logout outcomes by persona. Kept as a distinct happy path to exercise the authenticated-to-logged-out state transition directly. Budget: owner selected no limit, so all 2 candidate scenarios were kept.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Techniques: eqp + state_flow. Used the standard_user full-access persona as the representative authenticated session because the PRD documents it as the normal/full-access experience and does not distinguish logout outcomes by persona. Kept as a distinct happy path to exercise the authenticated-to-logged-out state transition directly. Budget: owner selected no limit, so all 2 candidate scenarios were kept.'

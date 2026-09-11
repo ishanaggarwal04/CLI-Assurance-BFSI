@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A zero-amount transfer attempt provides understandable feedback associated with the transfer operation.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"user-visible validation or rejection feedback associated with the zero-amount transfer attempt"}}}

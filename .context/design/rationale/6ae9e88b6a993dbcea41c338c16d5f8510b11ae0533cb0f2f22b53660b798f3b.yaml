@@ -1,0 +1,9 @@
+anchor: ac-44
+combinatorial:
+  reason: 'Applied equivalence partitioning for an invalid non-numeric monetary input and negative/error technique because the PRD requires monetary inputs to obey numeric rules and failed financial operations to avoid false committed state. Web-form and auth-gated profiles applied. Risk-gated interaction strength was 3 because money, auth, and data-loss apply; the effective coverage stayed at a single representative invalid partition because only one outcome-changing input family is under test here. Budget: no ceiling set, so this scenario was kept.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Applied equivalence partitioning for an invalid non-numeric monetary input and negative/error technique because the PRD requires monetary inputs to obey numeric rules and failed financial operations to avoid false committed state. Web-form and auth-gated profiles applied. Risk-gated interaction strength was 3 because money, auth, and data-loss apply; the effective coverage stayed at a single representative invalid partition because only one outcome-changing input family is under test here. Budget: no ceiling set, so this scenario was kept.'

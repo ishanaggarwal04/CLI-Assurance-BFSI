@@ -1,0 +1,9 @@
+anchor: ac-32
+combinatorial:
+  reason: 'Applied equivalence partitioning and state/flow techniques for the normal permitted transfer path: authenticated standard_user, distinct eligible accounts, and a valid positive amount accepted by the product. Risk-gated interaction strength was 3 because money, auth, and data-loss apply, but no covering array was needed because this scenario uses one representative allowed combination rather than sweeping multiple independent classes.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Applied equivalence partitioning and state/flow techniques for the normal permitted transfer path: authenticated standard_user, distinct eligible accounts, and a valid positive amount accepted by the product. Risk-gated interaction strength was 3 because money, auth, and data-loss apply, but no covering array was needed because this scenario uses one representative allowed combination rather than sweeping multiple independent classes.'

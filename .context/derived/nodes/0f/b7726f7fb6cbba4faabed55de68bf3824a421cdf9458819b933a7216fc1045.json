@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A failed transfer does not leave the source and destination accounts in a partially updated state.","kind":"forbidden-presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"failed transfer with a partially updated source/destination state"}}}

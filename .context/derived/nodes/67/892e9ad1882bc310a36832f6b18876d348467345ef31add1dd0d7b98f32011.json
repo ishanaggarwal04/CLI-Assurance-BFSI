@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"When authenticated as frozen_user, transfer functionality is unavailable, disabled, or rejected through normal UI interaction.","kind":"forbidden-presence","risk":"med","derived":true,"expected_answer":{"operator":"exists","operand":"a transfer path that frozen_user can complete or bypass through normal UI interaction"}}}

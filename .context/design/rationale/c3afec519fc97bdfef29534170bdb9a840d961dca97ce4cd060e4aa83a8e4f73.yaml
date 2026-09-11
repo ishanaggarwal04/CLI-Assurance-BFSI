@@ -1,0 +1,9 @@
+anchor: ac-52
+combinatorial:
+  reason: because money and auth apply, but no combinatorial input matrix was needed because this path is defined by a single persona class.
+  strength: 3
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied equivalence partitioning to the documented persona fixture frozen_user because persona changes the outcome; applied auth/permission because the promise is post-login and role/state gated; applied negative/error because the key behavior is blocked transfer access. Risk gate implied strength=3 because money and auth apply, but no combinatorial input matrix was needed because this path is defined by a single persona class.

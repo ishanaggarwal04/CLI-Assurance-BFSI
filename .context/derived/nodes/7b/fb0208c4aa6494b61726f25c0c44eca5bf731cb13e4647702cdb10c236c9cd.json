@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"The admin_user session exposes the administrative view and associated authorized capabilities.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"administrative view and associated authorized capabilities"}}}

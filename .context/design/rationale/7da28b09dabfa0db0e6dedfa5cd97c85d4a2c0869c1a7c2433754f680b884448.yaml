@@ -1,0 +1,9 @@
+anchor: ac-13
+combinatorial:
+  reason: 'Techniques: eqp for the invalid-credential partition, negative for the failed-auth outcome, and auth for the protected-session boundary. Web form and auth-gated profiles applied. No covering array was needed because this path isolates one invalid credential class whose outcome differs from the valid personas.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Techniques: eqp for the invalid-credential partition, negative for the failed-auth outcome, and auth for the protected-session boundary. Web form and auth-gated profiles applied. No covering array was needed because this path isolates one invalid credential class whose outcome differs from the valid personas.'

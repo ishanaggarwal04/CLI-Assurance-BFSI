@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"An admin_user session exposes the administrative capabilities or data authorized for the administrative persona.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"Authorized administrative capability or data within the admin_user session"}}}

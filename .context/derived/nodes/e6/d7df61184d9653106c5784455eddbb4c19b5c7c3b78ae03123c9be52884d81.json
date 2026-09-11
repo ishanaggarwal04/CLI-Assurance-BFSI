@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"The standard_user session exposes the normal/full-access banking experience available to a standard user.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"normal/full-access banking experience for standard_user"}}}

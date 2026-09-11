@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"The Remember me, Sign In, and Forgot password controls are keyboard operable.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"forall","operand":"Remember me, Sign In, and Forgot password controls are keyboard operable"}}}

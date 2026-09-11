@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A failed funding operation does not create a completed transaction/activity record.","kind":"forbidden-presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"a completed transaction/activity record for the failed funding attempt"}}}

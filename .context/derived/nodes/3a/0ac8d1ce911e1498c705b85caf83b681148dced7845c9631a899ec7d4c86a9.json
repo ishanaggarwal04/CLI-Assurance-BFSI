@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"For frozen_user, transfer functionality is unavailable, disabled, or clearly rejected.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"unavailable transfer UI, disabled transfer control, or rejection feedback for frozen_user attempting a transfer"}}}

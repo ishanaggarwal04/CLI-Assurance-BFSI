@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A transfer does not complete successfully with an invalid monetary value.","kind":"forbidden-presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"successful transfer completion for an invalid monetary value"}}}

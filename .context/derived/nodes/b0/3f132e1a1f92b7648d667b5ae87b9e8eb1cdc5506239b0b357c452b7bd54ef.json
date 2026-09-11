@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"The frozen persona is not permitted to perform transfers.","kind":"forbidden-presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"completed transfer by frozen_user"}}}

@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"After logout, protected banking information and operations are not available as an authenticated experience.","kind":"forbidden-presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"protected banking information or operations available as an authenticated experience"}}}

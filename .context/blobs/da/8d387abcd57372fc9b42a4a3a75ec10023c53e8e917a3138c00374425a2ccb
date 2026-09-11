@@ -1,0 +1,1 @@
+{"turn":1,"text":"The logout design is complete: **sc-7**/**t-7** cover residual protected-access blocking after logout, and **sc-8**/**t-8** cover clean session termination.\n\nThe only remaining content decision is whether you want to approve **ac-22** and **ac-23** as written, or adjust them before sign-off."}

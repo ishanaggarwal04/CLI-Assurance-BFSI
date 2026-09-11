@@ -1,0 +1,9 @@
+anchor: ac-15
+combinatorial:
+  reason: 'Techniques: eqp for the administrative credential partition, auth for the role boundary, and state_flow for the authenticated transition into a role-specific experience. Web form and auth-gated profiles applied. No covering array was needed because admin_user is a separate outcome-changing role path.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Techniques: eqp for the administrative credential partition, auth for the role boundary, and state_flow for the authenticated transition into a role-specific experience. Web form and auth-gated profiles applied. No covering array was needed because admin_user is a separate outcome-changing role path.'

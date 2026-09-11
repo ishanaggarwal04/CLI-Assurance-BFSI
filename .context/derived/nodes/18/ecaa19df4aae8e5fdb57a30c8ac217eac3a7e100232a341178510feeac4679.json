@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A standard-user banking experience does not expose administrative-only capabilities or data.","kind":"forbidden-presence","risk":"med","derived":true,"expected_answer":{"operator":"exists","operand":"administrative-only capabilities or data in a standard-user banking experience"}}}

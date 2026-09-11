@@ -1,0 +1,9 @@
+anchor: ac-11
+combinatorial:
+  reason: 'Techniques: a11y for accessible naming and keyboard operability, plus web-form because the surface is a documented login form. No covering array was needed because this scenario targets one accessibility-focused interaction path rather than outcome-changing credential combinations.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Techniques: a11y for accessible naming and keyboard operability, plus web-form because the surface is a documented login form. No covering array was needed because this scenario targets one accessibility-focused interaction path rather than outcome-changing credential combinations.'

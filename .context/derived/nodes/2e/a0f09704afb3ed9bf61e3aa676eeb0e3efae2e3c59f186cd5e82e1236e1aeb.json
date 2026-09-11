@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A slow_user authentication attempt displays a distinguishable loading or progress state while sign-in is in progress.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"distinguishable loading or progress state during slow_user sign-in"}}}

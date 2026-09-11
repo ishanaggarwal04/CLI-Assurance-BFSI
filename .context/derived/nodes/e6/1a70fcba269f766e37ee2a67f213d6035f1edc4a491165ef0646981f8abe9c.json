@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"Relevant transaction or activity information is represented or accessible where supported.","kind":"presence","risk":"med","derived":true,"expected_answer":{"operator":"exists","operand":"relevant transaction or activity information on the dashboard or through supported navigation"}}}

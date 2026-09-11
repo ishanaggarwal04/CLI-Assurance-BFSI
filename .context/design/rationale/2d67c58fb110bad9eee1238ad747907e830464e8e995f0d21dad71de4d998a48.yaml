@@ -1,0 +1,9 @@
+anchor: ac-43
+combinatorial:
+  reason: 'Applied equivalence partitioning for a representative valid funding input and state/flow for the authenticated commit path. Auth-gated and web-form profiles applied because the feature is browser-based and available only after authentication. Risk-gated interaction strength was 3 because money, auth, and data-loss apply; no covering array was needed because this scenario uses one representative allowed combination rather than sweeping multiple independent inputs. Budget: no ceiling set, so this scenario was kept.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Applied equivalence partitioning for a representative valid funding input and state/flow for the authenticated commit path. Auth-gated and web-form profiles applied because the feature is browser-based and available only after authentication. Risk-gated interaction strength was 3 because money, auth, and data-loss apply; no covering array was needed because this scenario uses one representative allowed combination rather than sweeping multiple independent inputs. Budget: no ceiling set, so this scenario was kept.'

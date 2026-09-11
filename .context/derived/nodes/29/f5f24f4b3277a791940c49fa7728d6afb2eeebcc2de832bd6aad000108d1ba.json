@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A standard_user session does not expose administrative-only view, data, or capabilities.","kind":"forbidden-presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"Administrative-only view, data, or capability within a standard_user session"}}}

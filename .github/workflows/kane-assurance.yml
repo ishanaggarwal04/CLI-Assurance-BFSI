@@ -1,202 +1,171 @@
 name: Kane CLI Assurance — Bank Demo (BFSI)
 
-# Manual trigger by default: this pipeline calls the KaneAI agent (context extract,
-# design tests) which consumes credits on every run. Add a push/schedule trigger
-# yourself once you're happy with the credit spend per run.
+# Runs the *_test.md files already authored under .testmuai/tests with kane-cli.
+# This does NOT do PRD ingestion / test design — it assumes the test.md files
+# are already written (by you, or by `kane-cli generate` / assurance design run
+# locally) and committed to the repo. Two ways in:
+#
+#   1. push — whenever a commit that touches .testmuai/tests/**/*_test.md lands
+#      on main, the pipeline automatically runs just the test.md files that
+#      commit added or changed.
+#   2. workflow_dispatch — run by hand, with `scope` choosing what to execute:
+#        - changed: same diff-based selection as the push trigger, computed
+#          against the previous commit on the ref you run this from
+#        - all: every *_test.md under .testmuai/tests
+#        - select: exactly the files you list in `test_files`
+#
+# Evidence packs (.testmuai/evidence/*.evidence), the generated automation
+# code + Result.md for each test (.testmuai/tests/output-*/**), and a
+# per-test pass/fail summary are all uploaded as workflow artifacts on every
+# run (even on failure), AND committed to a dedicated `test-results` branch
+# (kept separate from main so results never pollute the source history) —
+# browse it directly at:
+#   <repo>/tree/test-results/latest   — this run's results
+#   <repo>/tree/test-results/runs     — history of past runs (last 30 kept)
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".testmuai/tests/**/*_test.md"
   workflow_dispatch:
     inputs:
+      scope:
+        description: "Which tests to run"
+        required: true
+        default: "changed"
+        type: choice
+        options:
+          - changed
+          - all
+          - select
+      test_files:
+        description: "Only used when scope=select. Comma- or newline-separated *_test.md paths, relative to repo root."
+        required: false
+        default: ""
       login_url:
-        description: "Bank Demo entry point"
+        description: "Optional override for login_url/base_url in kane-variables.seed.json. Leave blank to use the seed file as-is."
         required: false
-        default: "https://qaplayground.com/bank/login"
+        default: ""
       shard_count:
-        description: "Number of parallel GitHub Actions runners (extra runners) to fan the test suite across"
+        description: "Number of parallel GitHub Actions runners to fan the selected tests across"
         required: false
-        default: "4"
+        default: "2"
       parallel_per_shard:
         description: "kane-cli testrun --parallel workers inside each shard runner"
         required: false
         default: "4"
-      max_tests_per_usecase:
-        description: "design tests --max budget ceiling per use-case"
-        required: false
-        default: "10"
-      skip_acceptance_criteria:
-        description: "If true, keep design output as draft when acceptance-criteria coverage validation fails"
-        required: false
-        default: false
-        type: boolean
 
 env:
   KANE_CLI_VERSION: "@testmuai/kane-cli"   # pin e.g. @testmuai/kane-cli@0.7.2 once you've validated a release
-  PRD_SOURCE_PATH: "bank-demo-prd.md"
-  PRD_SOURCE_ID: "bank-demo-prd"
-  VARIABLES_SEED: "config/kane-variables.seed.json"
+  VARIABLES_SEED: "kane-variables.seed.json"
 
 jobs:
   # ---------------------------------------------------------------------------
-  # 1. Ingest the PRD, extract use-cases, design ACs/scenarios/tests, and
-  #    BULK-APPROVE everything the agent proposed. kane-cli deliberately has no
-  #    built-in "auto-approve" switch (trust promotion is meant to be a human
-  #    decision) — the supported non-interactive path is to script the verdicts
-  #    file yourself. That's what this job does: every derived use-case, AC,
-  #    scenario and test produced by the agent is approved automatically, with
-  #    the reason "bulk-approved by CI policy" recorded on each verdict for the
-  #    audit trail. If you want a real reviewer in the loop before tests go
-  #    live, gate this job behind an environment with required reviewers
-  #    instead of relying on the bulk-approve step.
+  # 1. Work out which *_test.md files this run is responsible for, and stash
+  #    that list as an artifact so every shard in the next job reads the same
+  #    selection instead of recomputing it (and possibly disagreeing after a
+  #    push lands mid-run).
   # ---------------------------------------------------------------------------
-  design-and-review:
+  select-tests:
     runs-on: ubuntu-latest
     outputs:
       shards: ${{ steps.shard-plan.outputs.shards }}
+      has_tests: ${{ steps.list.outputs.has_tests }}
+    env:
+      SCOPE: ${{ inputs.scope || 'changed' }}
+      TEST_FILES_INPUT: ${{ inputs.test_files || '' }}
+      SHARD_COUNT: ${{ inputs.shard_count || '2' }}
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          fetch-depth: 0   # scope=changed needs history to diff against the previous commit
 
-      - name: Install Kane CLI
-        run: npm install -g ${{ env.KANE_CLI_VERSION }}
-
-      - name: Login (basic auth, non-interactive)
-        env:
-          LT_USERNAME: ${{ secrets.LT_USERNAME }}
-          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
-        run: kane-cli login --username "$LT_USERNAME" --access-key "$LT_ACCESS_KEY"
-
-      - name: Ingest PRD + extract use-cases (headless, defaults auto-taken)
+      - name: Resolve test scope
+        id: list
         run: |
           set -euo pipefail
-          # --mode override lands the source, then runs extraction headlessly,
-          # auto-taking every default (including high-risk ones — each is
-          # flagged in the commit record for later audit). This is the
-          # unattended equivalent of the interactive extract chat.
-          kane-cli context ingest "$PRD_SOURCE_PATH" --as "$PRD_SOURCE_ID" --mode override
+          mkdir -p .ci
 
-      - name: Bulk-approve extracted use-cases
-        run: |
-          set -euo pipefail
-          kane-cli context list --type usecase --inferred --json > usecases.ndjson || true
-          if [ -s usecases.ndjson ]; then
-            jq -s '[ .[] | {
-              ref: (.id // .ref // .logical_id),
-              resolution: "approved",
-              reason: "bulk-approved by CI run '"${GITHUB_RUN_ID}"' — BFSI pipeline policy (kane-cli has no built-in auto-approve; this is a scripted, recorded decision, not silent trust)"
-            } ]' usecases.ndjson > verdicts-usecases.json
-            kane-cli context review --verdicts verdicts-usecases.json --json
-          else
-            echo "No derived use-cases to approve (nothing new extracted)."
-          fi
+          case "$SCOPE" in
+            all)
+              find .testmuai/tests -name '*_test.md' | sort > .ci/selected_tests.txt
+              ;;
 
-      - name: Design tests for every trusted use-case
-        run: |
-          set -euo pipefail
-          kane-cli context list --type usecase --json | jq -r '.id // .ref // .logical_id' | sort -u > usecase_refs.txt
-          mkdir -p design-drafts
+            select)
+              printf '%s' "$TEST_FILES_INPUT" \
+                | tr ',' '\n' \
+                | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+                | grep -v '^$' \
+                | sort -u > .ci/selected_tests.txt
 
-          while IFS= read -r uc; do
-            [ -z "$uc" ] && continue
-            echo "== designing: $uc =="
+              # Fail fast on typos rather than letting kane-cli error out per-shard.
+              while IFS= read -r f; do
+                [ -z "$f" ] && continue
+                if [[ "$f" != *_test.md ]] || [ ! -f "$f" ]; then
+                  echo "::error::scope=select listed '$f', which is not an existing *_test.md file." >&2
+                  exit 1
+                fi
+              done < .ci/selected_tests.txt
+              ;;
 
-            # --mode override: unattended, auto-takes every design-session default.
-            # A use-case that's already designed & current exits 2 — treat as
-            # idempotent no-op so re-runs of this workflow don't fail the job.
-            #
-            # If skip_acceptance_criteria=true and Kane reports the specific
-            # AC/verification coverage validation error, preserve the output
-            # as a draft instead of failing the workflow.
-            if kane-cli design tests \
-                --use-case "$uc" \
-                --mode override \
-                --max "${{ inputs.max_tests_per_usecase }}" \
-                > "design-drafts/${uc}.log" 2>&1; then
-              echo "  design completed"
-            else
-              code=$?
-              cat "design-drafts/${uc}.log"
-
-              if [ "$code" -eq 2 ]; then
-                echo "  (already designed — skipping)"
-              elif [ "${{ inputs.skip_acceptance_criteria }}" = "true" ] && \
-                   grep -Eiq 'every AC must be claimed by the step that proves it|no step carries verifies tags|acceptance criteria' \
-                   "design-drafts/${uc}.log"; then
-                echo "  AC validation failed; preserving this design as DRAFT."
-
-                echo "# Kane CLI Design Draft" > "design-drafts/${uc}.draft.md"
-                echo "" >> "design-drafts/${uc}.draft.md"
-                echo "Use case: ${uc}" >> "design-drafts/${uc}.draft.md"
-                echo "Status: DRAFT" >> "design-drafts/${uc}.draft.md"
-                echo "Reason: Acceptance-criteria coverage validation failed." >> "design-drafts/${uc}.draft.md"
-                echo "" >> "design-drafts/${uc}.draft.md"
-                echo "The design was intentionally not promoted to executable/trusted tests." >> "design-drafts/${uc}.draft.md"
-                echo "Review the affected acceptance criterion and resume/fix it later." >> "design-drafts/${uc}.draft.md"
-                echo "" >> "design-drafts/${uc}.draft.md"
-                echo "Validation output:" >> "design-drafts/${uc}.draft.md"
-                cat "design-drafts/${uc}.log" >> "design-drafts/${uc}.draft.md"
+            changed|*)
+              if [ "${{ github.event_name }}" = "push" ]; then
+                BASE="${{ github.event.before }}"
+                HEAD="${{ github.event.after }}"
               else
-                exit "$code"
+                BASE="$(git rev-parse HEAD~1 2>/dev/null || echo '')"
+                HEAD="HEAD"
               fi
-            fi
-          done < usecase_refs.txt
 
-      - name: Upload design drafts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: design-drafts
-          path: design-drafts/
-          if-no-files-found: ignore
+              if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null; then
+                git diff --name-only --diff-filter=ACM "$BASE" "$HEAD" -- .testmuai/tests \
+                  | grep -E '_test\.md$' | sort -u > .ci/selected_tests.txt || true
+              else
+                # New branch / no previous commit to diff (before = all-zero SHA,
+                # or this is the repo's first commit) — fall back to every test.
+                echo "No usable base commit for a diff — running every test.md instead."
+                find .testmuai/tests -name '*_test.md' | sort > .ci/selected_tests.txt
+              fi
+              ;;
+          esac
 
-      - name: Bulk-approve designed ACs, scenarios and tests
-        run: |
-          set -euo pipefail
-          kane-cli context list --inferred --json > derived.ndjson || true
-          if [ -s derived.ndjson ]; then
-            jq -s '[ .[] | {
-              ref: (.id // .ref // .logical_id),
-              resolution: "approved",
-              reason: "bulk-approved by CI run '"${GITHUB_RUN_ID}"' — BFSI pipeline policy, design-stage output"
-            } ]' derived.ndjson > verdicts-design.json
-            kane-cli context review --verdicts verdicts-design.json --json
+          echo "Resolved scope '$SCOPE':"
+          cat .ci/selected_tests.txt || true
+
+          if [ -s .ci/selected_tests.txt ]; then
+            echo "has_tests=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Nothing left derived — design output already reviewed."
+            echo "has_tests=false" >> "$GITHUB_OUTPUT"
+            echo "No *_test.md files matched — nothing to run this time."
           fi
+
+      - uses: actions/upload-artifact@v4
+        if: steps.list.outputs.has_tests == 'true'
+        with:
+          name: selected-tests
+          path: .ci/selected_tests.txt
 
       - name: Compute shard plan
         id: shard-plan
         run: |
-          echo "shards=$(jq -n -c '[range(0; ${{ inputs.shard_count }})]')" >> "$GITHUB_OUTPUT"
-
-      - name: Package the context store for downstream jobs
-        run: tar -czf context-store.tar.gz .context
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: designed-tests
-          path: .testmuai/tests/**/*_test.md
-          if-no-files-found: ignore
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: context-store
-          path: context-store.tar.gz
+          echo "shards=$(jq -n -c '[range(0; ${{ env.SHARD_COUNT }})]')" >> "$GITHUB_OUTPUT"
 
   # ---------------------------------------------------------------------------
-  # 2. Fan the designed tests out across N extra GitHub Actions runners
-  #    (shard_count), and within each runner run kane-cli testrun with its own
-  #    --parallel worker pool. Total concurrency ≈ shard_count × parallel_per_shard.
+  # 2. Fan the selected tests out across N runners (shard_count), and within
+  #    each runner drive kane-cli testrun with its own --parallel worker pool.
   # ---------------------------------------------------------------------------
-  shard-tests:
-    needs: design-and-review
-    if: needs.design-and-review.result == 'success'
+  run-tests:
+    needs: select-tests
+    if: needs.select-tests.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJson(needs.design-and-review.outputs.shards) }}
+        shard: ${{ fromJson(needs.select-tests.outputs.shards) }}
+    env:
+      SHARD_COUNT: ${{ inputs.shard_count || '2' }}
+      PARALLEL_PER_SHARD: ${{ inputs.parallel_per_shard || '4' }}
+      LOGIN_URL: ${{ inputs.login_url || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -217,36 +186,27 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: designed-tests
-          path: .testmuai/tests
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: context-store
-
-      - name: Restore context store
-        run: tar -xzf context-store.tar.gz
+          name: selected-tests
+          path: .ci
 
       - name: Build run-time variables file
         run: |
           set -euo pipefail
-          # kane-cli testrun run has no --variables-file flag (that flag only
-          # exists on `kane-cli run` / `testmd run`). Variables reach testrun
-          # via the project-local auto-load path instead: any *.json dropped
-          # in .testmuai/variables/ is picked up automatically for every
-          # kane-cli invocation made from this directory.
           mkdir -p .testmuai/variables
-          jq --arg url "${{ inputs.login_url }}" \
-             '.login_url.value = $url | .base_url.value = $url' \
-             "$VARIABLES_SEED" > .testmuai/variables/runtime.json
+          if [ -n "$LOGIN_URL" ]; then
+            jq --arg url "$LOGIN_URL" \
+               '.login_url.value = $url | .base_url.value = $url' \
+               "$VARIABLES_SEED" > .testmuai/variables/runtime.json
+          else
+            cp "$VARIABLES_SEED" .testmuai/variables/runtime.json
+          fi
 
       - name: Select this shard's tests
         id: select
         run: |
           set -euo pipefail
-          mapfile -t ALL_TESTS < <(find .testmuai/tests -name '*_test.md' | sort)
+          mapfile -t ALL_TESTS < .ci/selected_tests.txt
           TOTAL=${#ALL_TESTS[@]}
-          SHARD_COUNT=${{ inputs.shard_count }}
           THIS_SHARD=${{ matrix.shard }}
           SELECTED=()
           for i in "${!ALL_TESTS[@]}"; do
@@ -271,76 +231,224 @@ jobs:
           set -euo pipefail
           mapfile -t SHARD_FILES < shard_files.txt
           kane-cli testrun run "${SHARD_FILES[@]}" \
-            --parallel "${{ inputs.parallel_per_shard }}" \
+            --parallel "$PARALLEL_PER_SHARD" \
             --headless \
             --on-failure continue \
             --username "$LT_USERNAME" \
             --access-key "$LT_ACCESS_KEY" \
-            --name "bank-demo-shard-${{ matrix.shard }}-run-${{ github.run_id }}"
+            --name "bfsi-testmd-shard-${{ matrix.shard }}-run-${{ github.run_id }}"
+
+      - name: Collect this shard's generated code + evidence
+        if: always() && steps.select.outputs.has_tests == 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p shard-output/evidence
+          cp .testmuai/evidence/*.evidence shard-output/evidence/ 2>/dev/null || true
+          # For each test.md this shard ran, carry over its generated
+          # automation code + Result.md (kane-cli writes these next to the
+          # source file, prefixed output-<name>[.<env>]/).
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            base="$(basename "$f" _test.md)"
+            dir="$(dirname "$f")"
+            find "$dir" -maxdepth 1 -type d -name "output-${base}*" -exec cp -r {} shard-output/ \; 2>/dev/null || true
+          done < shard_files.txt
 
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: always() && steps.select.outputs.has_tests == 'true'
         with:
-          name: evidence-shard-${{ matrix.shard }}
-          path: .testmuai/evidence/*.evidence
+          name: results-shard-${{ matrix.shard }}
+          path: shard-output/
           if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
-  # 3. Aggregate: pull every shard's evidence pack, print a coverage summary,
-  #    and gate the pipeline on whether every shard actually passed.
+  # 3. Aggregate every shard's generated code + evidence into one artifact,
+  #    and write a per-test pass/fail summary straight into the run's job
+  #    summary page so results are readable without downloading anything.
   # ---------------------------------------------------------------------------
   aggregate:
-    needs: [design-and-review, shard-tests]
-    if: always()
+    needs: [select-tests, run-tests]
+    if: always() && needs.select-tests.outputs.has_tests == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Kane CLI
-        run: npm install -g ${{ env.KANE_CLI_VERSION }}
-
-      - name: Login (basic auth, non-interactive)
-        env:
-          LT_USERNAME: ${{ secrets.LT_USERNAME }}
-          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
-        run: kane-cli login --username "$LT_USERNAME" --access-key "$LT_ACCESS_KEY"
-
       - uses: actions/download-artifact@v4
         with:
-          name: context-store
-
-      - run: tar -xzf context-store.tar.gz
-
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: evidence-shard-*
-          path: evidence
+          pattern: results-shard-*
+          path: results
           merge-multiple: true
 
-      - name: Coverage summary
+      - name: Publish results summary
         run: |
           set -euo pipefail
-          echo "## Kane CLI coverage — Bank Demo (BFSI)" >> "$GITHUB_STEP_SUMMARY"
-          kane-cli cover --json > coverage.json || true
-          if [ -s coverage.json ]; then
-            jq -r '. as $c | "Proven vs owed summary written to coverage.json (see artifact)."' coverage.json >> "$GITHUB_STEP_SUMMARY" || true
+          {
+            echo "## Kane CLI test run — .testmuai/tests"
+            echo ""
+            echo "Full generated automation code and evidence packs for every test are attached as the \`all-results\` workflow artifact below, and (once the \`publish-results\` job finishes) browseable at [\`test-results/latest\`](${{ github.server_url }}/${{ github.repository }}/tree/test-results/latest)."
+            echo ""
+            echo "### Results"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if find results -name Result.md 2>/dev/null | grep -q .; then
+            find results -name Result.md | sort | while read -r f; do
+              name="$(basename "$(dirname "$f")")"
+              {
+                echo "<details><summary>${name}</summary>"
+                echo ""
+                cat "$f"
+                echo ""
+                echo "</details>"
+              } >> "$GITHUB_STEP_SUMMARY"
+            done
+          else
+            echo "_No Result.md files were produced by this run._" >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Evidence packs collected:" >> "$GITHUB_STEP_SUMMARY"
-          ls -1 evidence/*.evidence 2>/dev/null | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY" || echo "- none found" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: coverage.json
+          name: all-results
+          path: results
           if-no-files-found: ignore
 
       - name: Gate on shard results
         run: |
-          if [ "${{ needs.shard-tests.result }}" != "success" ]; then
+          if [ "${{ needs.run-tests.result }}" != "success" ]; then
             echo "One or more test shards failed — failing the pipeline."
             exit 1
           fi
-          echo "All shards passed."
+          echo "All selected tests passed."
+
+  # ---------------------------------------------------------------------------
+  # 4. Commit this run's generated code + evidence to a dedicated `test-results`
+  #    branch so they're browseable straight from the GitHub UI (no downloading
+  #    an artifact zip, no digging through logs). Runs independently of the
+  #    `aggregate` gate above — it still publishes results when tests fail,
+  #    which is exactly when you most want to see them.
+  #
+  #    Layout on the test-results branch:
+  #      latest/         — this run's results, overwritten every run
+  #      runs/<run_id>/  — one folder per run, kept for the most recent 30 runs
+  #      README.md       — run history table, regenerated every run
+  # ---------------------------------------------------------------------------
+  publish-results:
+    needs: [select-tests, run-tests]
+    if: always() && needs.select-tests.outputs.has_tests == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: results-shard-*
+          path: results
+          merge-multiple: true
+
+      - uses: actions/checkout@v4
+
+      - name: Build this run's result set
+        id: build
+        run: |
+          set -euo pipefail
+          RUN_DIR="run-build"
+          rm -rf "$RUN_DIR"
+          mkdir -p "$RUN_DIR"
+          cp -r results/. "$RUN_DIR/" 2>/dev/null || true
+
+          {
+            echo "# Kane CLI test results — run ${{ github.run_id }} (attempt ${{ github.run_attempt }})"
+            echo ""
+            echo "- Triggered by: \`${{ github.event_name }}\`"
+            echo "- Commit: [\`${GITHUB_SHA:0:7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})"
+            echo "- Workflow run: [$GITHUB_RUN_ID]( ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} )"
+            echo ""
+            echo "| Test | Status | Duration | Result |"
+            echo "|---|---|---|---|"
+          } > "$RUN_DIR/README.md"
+
+          if find "$RUN_DIR" -name Result.md 2>/dev/null | grep -q .; then
+            find "$RUN_DIR" -name Result.md | sort | while read -r f; do
+              status="$(awk -F': ' '/^status:/{print $2; exit}' "$f")"
+              dur="$(awk -F': ' '/^duration_s:/{print $2; exit}' "$f")"
+              name="$(basename "$(dirname "$f")")"
+              rel="${f#$RUN_DIR/}"
+              case "$status" in
+                passed) badge="✅ passed" ;;
+                failed) badge="❌ failed" ;;
+                *) badge="⚠️ ${status:-unknown}" ;;
+              esac
+              echo "| $name | $badge | ${dur:-?}s | [Result.md]($rel) |" >> "$RUN_DIR/README.md"
+            done
+          else
+            echo "| _none_ | — | — | — |" >> "$RUN_DIR/README.md"
+          fi
+
+          PASSED=$(grep -c '✅ passed' "$RUN_DIR/README.md" || true)
+          FAILED=$(grep -c '❌ failed' "$RUN_DIR/README.md" || true)
+          OTHER=$(grep -c '⚠️' "$RUN_DIR/README.md" || true)
+
+          cat > "$RUN_DIR/meta.json" <<EOF
+          {
+            "run_id": "${{ github.run_id }}",
+            "run_number": "${{ github.run_number }}",
+            "run_attempt": "${{ github.run_attempt }}",
+            "sha": "${{ github.sha }}",
+            "event": "${{ github.event_name }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "passed": $PASSED,
+            "failed": $FAILED,
+            "other": $OTHER
+          }
+          EOF
+
+      - name: Publish to test-results branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin test-results 2>/dev/null || true
+          if git show-ref --verify --quiet refs/remotes/origin/test-results; then
+            git checkout -B test-results origin/test-results
+          else
+            git checkout --orphan test-results
+            git rm -rf . > /dev/null 2>&1 || true
+          fi
+
+          RUN_DIR="runs/${{ github.run_id }}-${{ github.run_attempt }}"
+          rm -rf "$RUN_DIR" latest
+          mkdir -p "$(dirname "$RUN_DIR")"
+          mv run-build "$RUN_DIR"
+          cp -r "$RUN_DIR" latest
+
+          # Keep only the most recent 30 run folders so the branch doesn't grow forever.
+          mapfile -t OLD_RUNS < <(ls -1 runs | sort -t- -k1,1rn | tail -n +31)
+          for old in "${OLD_RUNS[@]:-}"; do
+            [ -z "$old" ] && continue
+            rm -rf "runs/$old"
+          done
+
+          {
+            echo "# Kane CLI — BFSI test results"
+            echo ""
+            echo "[Latest run](./latest/README.md) · Full history below (last 30 runs kept)."
+            echo ""
+            echo "| Run | When (UTC) | Passed | Failed | Other |"
+            echo "|---|---|---|---|---|"
+          } > README.md
+
+          for d in $(ls -1 runs | sort -t- -k1,1rn); do
+            meta="runs/$d/meta.json"
+            [ -f "$meta" ] || continue
+            when=$(jq -r '.timestamp' "$meta")
+            passed=$(jq -r '.passed' "$meta")
+            failed=$(jq -r '.failed' "$meta")
+            other=$(jq -r '.other' "$meta")
+            echo "| [$d](./runs/$d/README.md) | $when | $passed | $failed | $other |" >> README.md
+          done
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to publish."
+          else
+            git commit -m "Publish results for run ${{ github.run_id }} (attempt ${{ github.run_attempt }})"
+            git push origin HEAD:test-results
+          fi

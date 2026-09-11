@@ -1,0 +1,9 @@
+anchor: ac-12
+combinatorial:
+  reason: 'Techniques: eqp for the locked credential partition, auth for access restriction, and negative for the denied-login outcome. Web form and auth-gated profiles applied. No covering array was needed because locked_user is a distinct outcome-changing persona that must be separated from both valid and generic-invalid authentication.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Techniques: eqp for the locked credential partition, auth for access restriction, and negative for the denied-login outcome. Web form and auth-gated profiles applied. No covering array was needed because locked_user is a distinct outcome-changing persona that must be separated from both valid and generic-invalid authentication.'

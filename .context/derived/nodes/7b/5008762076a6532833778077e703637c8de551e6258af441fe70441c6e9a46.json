@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"The login interface provides a username field with a clear input affordance.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"username field with a clear input affordance"}}}

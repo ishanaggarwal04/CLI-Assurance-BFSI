@@ -1,0 +1,9 @@
+anchor: ac-34
+combinatorial:
+  reason: Applied boundary value analysis at the documented positivity boundary and negative/error technique because the PRD states invalid monetary values must not be silently accepted and transfer amounts must comply with positivity constraints. Risk-gated interaction strength was 3 because money and data-loss apply, degraded in practice to a single boundary input because only the amount boundary is under test here.
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied boundary value analysis at the documented positivity boundary and negative/error technique because the PRD states invalid monetary values must not be silently accepted and transfer amounts must comply with positivity constraints. Risk-gated interaction strength was 3 because money and data-loss apply, degraded in practice to a single boundary input because only the amount boundary is under test here.

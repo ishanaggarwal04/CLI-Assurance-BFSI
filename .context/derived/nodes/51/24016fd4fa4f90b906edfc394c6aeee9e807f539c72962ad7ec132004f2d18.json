@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A transfer identifies the account from which funds are moved.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"source account identifier/value in the transfer flow"}}}

@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"The username and password form fields expose accessible labels or equivalent accessible names.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"forall","operand":"username and password form fields expose accessible labels or equivalent accessible names"}}}

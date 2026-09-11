@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"When transaction/activity history is exposed, a completed transfer is represented there.","kind":"propagation","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"transaction/activity history entry for the completed transfer"}}}

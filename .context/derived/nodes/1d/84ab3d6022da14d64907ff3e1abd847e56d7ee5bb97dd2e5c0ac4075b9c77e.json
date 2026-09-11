@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A transfer contains a monetary amount subject to product validation.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"monetary amount input/value in the transfer flow"}}}

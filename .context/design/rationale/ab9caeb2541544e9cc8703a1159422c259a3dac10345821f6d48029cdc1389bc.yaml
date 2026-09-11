@@ -1,0 +1,9 @@
+anchor: ac-51
+combinatorial:
+  reason: because auth applies, but no combinatorial input matrix was needed because the persona is the single outcome-changing input.
+  strength: 3
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied equivalence partitioning to the documented admin_user persona; applied auth/permission because the dashboard is role-aware after authentication; applied state/flow because the path starts at successful login and ends in the authenticated destination view. Risk gate implied strength=3 because auth applies, but no combinatorial input matrix was needed because the persona is the single outcome-changing input.

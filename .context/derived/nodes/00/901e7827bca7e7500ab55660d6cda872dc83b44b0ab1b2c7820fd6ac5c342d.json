@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"When authenticated as slow_user, the product communicates loading or progress while the banking overview is still resolving.","kind":"presence","risk":"med","derived":true,"expected_answer":{"operator":"exists","operand":"a user-understandable loading or progress indication during slow_user dashboard resolution"}}}

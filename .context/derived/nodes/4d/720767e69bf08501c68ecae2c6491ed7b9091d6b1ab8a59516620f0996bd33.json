@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"The login page provides a Forgot password entry point.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"Forgot password entry point"}}}

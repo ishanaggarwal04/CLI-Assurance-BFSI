@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A transfer identifies the account receiving funds.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"destination account identifier/value in the transfer flow"}}}

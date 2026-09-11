@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"An authenticated supported user can initiate the product's supported balance-increase operation.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"a deposit, add-funds, or equivalent balance-increase action available to an authenticated supported user"}}}

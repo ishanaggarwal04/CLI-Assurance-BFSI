@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"Relevant accounts and balances are represented in the dashboard or reachable through the banking navigation.","kind":"presence","risk":"med","derived":true,"expected_answer":{"operator":"exists","operand":"relevant accounts and balances on the dashboard or through banking navigation"}}}

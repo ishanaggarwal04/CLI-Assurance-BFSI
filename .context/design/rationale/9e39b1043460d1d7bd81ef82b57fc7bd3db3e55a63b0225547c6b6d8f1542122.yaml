@@ -1,0 +1,9 @@
+anchor: ac-48
+combinatorial:
+  reason: 'Applied auth/permission technique for the protected-operation boundary and negative/error technique for the blocked unauthenticated path. Auth-gated profile applied. Risk-gated interaction strength was 3 because auth applies; no covering array was needed because this path exercises one representative unauthenticated state against one protected operation. Budget: no ceiling set, so this scenario was kept.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Applied auth/permission technique for the protected-operation boundary and negative/error technique for the blocked unauthenticated path. Auth-gated profile applied. Risk-gated interaction strength was 3 because auth applies; no covering array was needed because this path exercises one representative unauthenticated state against one protected operation. Budget: no ceiling set, so this scenario was kept.'

@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A locked_user authentication attempt produces a clear user-visible locked-state outcome.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"clear user-visible locked-state outcome"}}}

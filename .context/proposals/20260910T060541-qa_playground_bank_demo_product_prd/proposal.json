@@ -1,0 +1,466 @@
+{
+  "version": 1,
+  "read_basis": "sha256:e16604b046794cf6214bbf3512b531498f500dc4e97d7a3c7433c78a1e063759",
+  "source": {
+    "source_id": "qa_playground_bank_demo_product_prd",
+    "source_cid": "sha256:6133e2b96694d367f7c58da2c13d0ac879560d0739dcf5037a593511ed2c6ba7"
+  },
+  "use_cases": [
+    {
+      "temp_ref": "n1",
+      "title": "Authenticate to the banking application",
+      "description": "A predefined persona can use the login page to enter username and password, optionally use password visibility and Remember me controls, submit Sign In, and either establish the correct authenticated session for an active credential or receive an understandable failure or locked-state outcome without being granted normal access, with session identity preserved and partially authenticated states avoided.",
+      "summary": "Sign in with a predefined banking persona",
+      "actors": [
+        "predefined persona"
+      ],
+      "value": "Establishes the correct authenticated boundary and persona-specific banking experience without granting unauthorized access.",
+      "risk": "high",
+      "cite": {
+        "anchor": "L106-L107",
+        "quote": "A valid active credential establishes an authenticated session and exposes the\nappropriate post-login experience."
+      },
+      "cites": [
+        {
+          "anchor": "L106-L107",
+          "quote": "A valid active credential establishes an authenticated session and exposes the\nappropriate post-login experience."
+        },
+        {
+          "anchor": "L108-L109",
+          "quote": "Invalid credentials do not grant access and produce an understandable failure state.\nAUTH-11 Locked authentication A locked account must not be treated as a normal active session."
+        },
+        {
+          "anchor": "L112-L112",
+          "quote": "An authenticated session must have a clear distinction from the unauthenticated login state."
+        },
+        {
+          "anchor": "L114-L114",
+          "quote": "The application must preserve the appropriate user identity while the session is active."
+        },
+        {
+          "anchor": "L120-L120",
+          "quote": "Session persistence behavior must respect the Remember me control when the feature is implemented."
+        },
+        {
+          "anchor": "L122-L123",
+          "quote": "Expired or invalid sessions must be handled gracefully rather than leaving the user in a partially authenticated\nstate."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "login page presents username, password, password visibility, Remember me, Sign In, and Forgot password controls",
+          "cite": {
+            "anchor": "L346-L347",
+            "quote": "Username/password fields, password visibility control, Remember me, Sign In and Forgot password are\nclearly presented."
+          }
+        },
+        {
+          "text": "seven predefined credential fixtures are exposed: standard_user, locked_user, frozen_user, overdraft_user, slow_user, error_user, and admin_user",
+          "cite": {
+            "anchor": "L61-L67",
+            "quote": "standard_user bank_sauce Full access\nlocked_user bank_sauce Locked account\nfrozen_user bank_sauce Frozen — no transfers\noverdraft_user bank_sauce Negative balance\nslow_user bank_sauce Slow loading\nerror_user bank_sauce Wrong loan total\nadmin_user admin_sauce Admin view"
+          }
+        },
+        {
+          "text": "each credential fixture produces the product state represented by its description",
+          "cite": {
+            "anchor": "L445-L445",
+            "quote": "PRD-AC-03 Each credential fixture produces the product state represented by its description."
+          }
+        }
+      ],
+      "depends_on_hint": []
+    },
+    {
+      "temp_ref": "n2",
+      "title": "End an authenticated session",
+      "description": "An authenticated user can log out so that the active session is terminated, protected banking content stops being actionable as authenticated content, and the product returns cleanly to a non-authenticated state rather than leaving residual access behind.",
+      "summary": "Log out of banking access",
+      "actors": [
+        "authenticated user"
+      ],
+      "value": "Protects banking data and operations by cleanly ending authenticated access.",
+      "risk": "high",
+      "cite": {
+        "anchor": "L116-L116",
+        "quote": "Logout must terminate the active authenticated session."
+      },
+      "cites": [
+        {
+          "anchor": "L116-L116",
+          "quote": "Logout must terminate the active authenticated session."
+        },
+        {
+          "anchor": "L118-L118",
+          "quote": "After logout, protected banking content must not remain actionable as an authenticated experience."
+        },
+        {
+          "anchor": "L419-L420",
+          "quote": "Logged out Session terminated Protected banking state is no longer actionable as authenticated\ncontent."
+        },
+        {
+          "anchor": "L380-L380",
+          "quote": "Logout must invalidate the active authenticated experience."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "logout terminates the session and makes protected banking content non-actionable as authenticated content",
+          "cite": {
+            "anchor": "L458-L458",
+            "quote": "PRD-AC-15 Logout terminates the authenticated experience."
+          }
+        }
+      ],
+      "depends_on_hint": [
+        "n1"
+      ]
+    },
+    {
+      "temp_ref": "n3",
+      "title": "Access the administrative banking view",
+      "description": "An admin_user can authenticate into the administrative experience, see administrative information and controls that are distinct from ordinary customer-facing banking information, and exercise only those capabilities authorized for the administrative persona while standard users remain excluded from admin-only access.",
+      "summary": "Reach the admin-specific banking experience",
+      "actors": [
+        "admin user"
+      ],
+      "value": "Exposes role-specific administrative data and controls only to authorized administrators.",
+      "risk": "high",
+      "cite": {
+        "anchor": "L273-L273",
+        "quote": "The admin_user fixture represents the administrative view."
+      },
+      "cites": [
+        {
+          "anchor": "L273-L273",
+          "quote": "The admin_user fixture represents the administrative view."
+        },
+        {
+          "anchor": "L275-L275",
+          "quote": "Administrative authentication must lead to the intended administrative experience."
+        },
+        {
+          "anchor": "L277-L278",
+          "quote": "Administrative information and controls should be distinguishable from ordinary customer-facing banking\ninformation."
+        },
+        {
+          "anchor": "L280-L281",
+          "quote": "Administrative capabilities must be restricted to the administrative persona where the product defines\nrole-based access."
+        },
+        {
+          "anchor": "L283-L283",
+          "quote": "A standard user must not automatically inherit administrative-only capabilities."
+        },
+        {
+          "anchor": "L339-L339",
+          "quote": "Admin user Receives the administrative view and associated authorized capabilities."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "administrative information and controls are distinct from ordinary customer-facing banking information",
+          "cite": {
+            "anchor": "L277-L278",
+            "quote": "Administrative information and controls should be distinguishable from ordinary customer-facing banking\ninformation."
+          }
+        },
+        {
+          "text": "administrative view and capabilities are restricted to the admin persona and are not inherited by standard users",
+          "cite": {
+            "anchor": "L280-L283",
+            "quote": "Administrative capabilities must be restricted to the administrative persona where the product defines\nrole-based access.\n•\nA standard user must not automatically inherit administrative-only capabilities."
+          }
+        }
+      ],
+      "depends_on_hint": [
+        "n1"
+      ]
+    },
+    {
+      "temp_ref": "n4",
+      "title": "Transfer money between accounts",
+      "description": "An authenticated user can perform a supported transfer when the current user and account state permits it by selecting a source account, selecting a destination account, entering a monetary amount that passes product validation and sufficient-funds or overdraft rules, and completing the transfer so that frozen users are blocked, failed attempts do not leave partial updates, successful transfers update both balances consistently, and exposed transaction history reflects the committed movement.",
+      "summary": "Move funds between eligible accounts",
+      "actors": [
+        "authenticated user"
+      ],
+      "value": "Moves funds while preserving account, permission, and transaction integrity.",
+      "risk": "high",
+      "cite": {
+        "anchor": "L189-L194",
+        "quote": "The product provides a supported transfer mechanism where permitted for the current\nuser/account state.\nTRF-02 Source selection A transfer identifies the account from which funds are moved.\nTRF-03 Destination selection A transfer identifies the account receiving funds.\nTRF-04 Amount A transfer contains a monetary amount subject to product validation."
+      },
+      "cites": [
+        {
+          "anchor": "L189-L194",
+          "quote": "The product provides a supported transfer mechanism where permitted for the current\nuser/account state.\nTRF-02 Source selection A transfer identifies the account from which funds are moved.\nTRF-03 Destination selection A transfer identifies the account receiving funds.\nTRF-04 Amount A transfer contains a monetary amount subject to product validation."
+        },
+        {
+          "anchor": "L195-L198",
+          "quote": "The product must apply its supported balance/overdraft rules when determining whether\na transfer can complete.\nTRF-07 Frozen restriction The frozen persona must not be permitted to perform transfers, consistent with its explicit\nfixture description."
+        },
+        {
+          "anchor": "L199-L203",
+          "quote": "TRF-08 Atomicity A failed transfer must not leave the source and destination in an inconsistent\npartially-updated state.\nTRF-09 Balance update A completed transfer must produce consistent source and destination balance changes.\nTRF-10 Transaction record A completed transfer must be represented in transaction/activity history where that\nfeature is exposed."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "a transfer identifies a source account, a destination account, and a monetary amount",
+          "cite": {
+            "anchor": "L191-L194",
+            "quote": "TRF-02 Source selection A transfer identifies the account from which funds are moved.\nTRF-03 Destination selection A transfer identifies the account receiving funds.\nTRF-04 Amount A transfer contains a monetary amount subject to product validation."
+          }
+        },
+        {
+          "text": "transfer completion follows supported balance or overdraft rules and frozen users cannot perform transfers",
+          "cite": {
+            "anchor": "L195-L198",
+            "quote": "The product must apply its supported balance/overdraft rules when determining whether\na transfer can complete.\nTRF-07 Frozen restriction The frozen persona must not be permitted to perform transfers, consistent with its explicit\nfixture description."
+          }
+        },
+        {
+          "text": "failed transfers are atomic, and successful transfers update both balances and transaction history consistently",
+          "cite": {
+            "anchor": "L199-L203",
+            "quote": "TRF-08 Atomicity A failed transfer must not leave the source and destination in an inconsistent\npartially-updated state.\nTRF-09 Balance update A completed transfer must produce consistent source and destination balance changes.\nTRF-10 Transaction record A completed transfer must be represented in transaction/activity history where that\nfeature is exposed."
+          }
+        }
+      ],
+      "depends_on_hint": [
+        "n1",
+        "n7"
+      ]
+    },
+    {
+      "temp_ref": "n5",
+      "title": "Add funds to an account",
+      "description": "Where the live Bank Demo exposes deposit, add-funds, or equivalent balance-increase functionality, an authenticated user can initiate that funding action with a monetary amount that obeys the product's numeric and business rules, commit the increase to the correct balance, have the result reflected in transaction history where supported, and avoid false balances or completed transactions when the operation fails.",
+      "summary": "Increase an account balance",
+      "actors": [
+        "authenticated user"
+      ],
+      "value": "Supports balance increases without corrupting account or transaction state.",
+      "risk": "high",
+      "cite": {
+        "anchor": "L205-L206",
+        "quote": "Where the live Bank Demo exposes deposit, add-funds or equivalent balance-increase functionality, it forms part\nof the account state-management domain."
+      },
+      "cites": [
+        {
+          "anchor": "L205-L206",
+          "quote": "Where the live Bank Demo exposes deposit, add-funds or equivalent balance-increase functionality, it forms part\nof the account state-management domain."
+        },
+        {
+          "anchor": "L208-L213",
+          "quote": "Supported users can initiate the product's supported balance-increase operation.\nFUND-02 Amount validation The monetary input must obey the application's accepted numeric and business rules.\nFUND-03 Balance update A successful funding operation increases the appropriate balance by the committed\namount.\nFUND-04 Transaction linkage A successful funding operation is reflected in transaction history where supported.\nFUND-05 Failure integrity A failed funding operation must not create a false balance or completed transaction."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "supported users can initiate the product's balance-increase operation and the amount must obey accepted numeric and business rules",
+          "cite": {
+            "anchor": "L208-L209",
+            "quote": "Supported users can initiate the product's supported balance-increase operation.\nFUND-02 Amount validation The monetary input must obey the application's accepted numeric and business rules."
+          }
+        },
+        {
+          "text": "successful funding updates the correct balance and transaction history, while failed funding does not create a false balance or completed transaction",
+          "cite": {
+            "anchor": "L210-L213",
+            "quote": "FUND-03 Balance update A successful funding operation increases the appropriate balance by the committed\namount.\nFUND-04 Transaction linkage A successful funding operation is reflected in transaction history where supported.\nFUND-05 Failure integrity A failed funding operation must not create a false balance or completed transaction."
+          }
+        }
+      ],
+      "depends_on_hint": [
+        "n1",
+        "n7"
+      ]
+    },
+    {
+      "temp_ref": "n6",
+      "title": "View a role-appropriate banking dashboard",
+      "description": "After a successful active-user login, an authenticated user reaches the banking overview that reflects the current persona, presents or links to relevant accounts, balances, and transaction/activity information, stays consistent with underlying committed state, and differentiates ordinary versus administrative experiences while still rendering the intended persona-specific behavior for exceptional states the product exposes.",
+      "summary": "See the authenticated banking overview",
+      "actors": [
+        "authenticated user"
+      ],
+      "value": "Gives users a consistent overview of their banking state and available banking areas.",
+      "risk": "med",
+      "cite": {
+        "anchor": "L125-L126",
+        "quote": "The dashboard is the authenticated banking overview. It should present the user's relevant banking state and\nprovide access to the application's supported account and transaction capabilities."
+      },
+      "cites": [
+        {
+          "anchor": "L125-L126",
+          "quote": "The dashboard is the authenticated banking overview. It should present the user's relevant banking state and\nprovide access to the application's supported account and transaction capabilities."
+        },
+        {
+          "anchor": "L131-L139",
+          "quote": "A successful active-user login leads to the appropriate authenticated banking experience.\nDASH-02 User context The dashboard reflects the authenticated user's persona and associated state.\nDASH-03 Account visibility Relevant accounts and balances are represented in the dashboard or reachable through\nthe banking navigation.\nDASH-04 Transaction visibility Relevant transaction/activity information is represented or accessible where supported.\nDASH-05 State consistency Dashboard values must remain consistent with the underlying account/transaction state\nshown elsewhere in the application.\nDASH-06 Role awareness Administrative users receive the intended administrative view rather than being treated\nidentically to a standard user."
+        },
+        {
+          "anchor": "L140-L141",
+          "quote": "DASH-07 Exceptional states Locked, frozen, overdraft, slow-loading and error-oriented personas must produce their\nintended state-specific experience."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "the dashboard exposes persona context plus relevant accounts, balances, and transaction or activity information, directly or through navigation",
+          "cite": {
+            "anchor": "L132-L135",
+            "quote": "DASH-02 User context The dashboard reflects the authenticated user's persona and associated state.\nDASH-03 Account visibility Relevant accounts and balances are represented in the dashboard or reachable through\nthe banking navigation.\nDASH-04 Transaction visibility Relevant transaction/activity information is represented or accessible where supported."
+          }
+        },
+        {
+          "text": "administrative users receive a distinct role-aware view, and locked, frozen, overdraft, slow-loading, and error-oriented personas receive their intended state-specific experience",
+          "cite": {
+            "anchor": "L138-L141",
+            "quote": "DASH-06 Role awareness Administrative users receive the intended administrative view rather than being treated\nidentically to a standard user.\nDASH-07 Exceptional states Locked, frozen, overdraft, slow-loading and error-oriented personas must produce their\nintended state-specific experience."
+          }
+        }
+      ],
+      "depends_on_hint": [
+        "n1"
+      ]
+    },
+    {
+      "temp_ref": "n7",
+      "title": "Manage banking accounts",
+      "description": "An authenticated user can view the accounts available to the current user, distinguish each account by displayed identity and type information, see balances and special account states consistently across product surfaces, and, where the live product supports creation, provide required account information, pass validation, create an account, and have it remain available according to the application's persistence model.",
+      "summary": "View and maintain supported accounts",
+      "actors": [
+        "authenticated user"
+      ],
+      "value": "Lets users inspect and, where supported, create accounts while keeping account data accurate and consistent.",
+      "risk": "med",
+      "cite": {
+        "anchor": "L143-L144",
+        "quote": "Account management is a core product domain. The product should allow the authenticated user to interact with\nsupported banking accounts and maintain accurate account-level state."
+      },
+      "cites": [
+        {
+          "anchor": "L143-L144",
+          "quote": "Account management is a core product domain. The product should allow the authenticated user to interact with\nsupported banking accounts and maintain accurate account-level state."
+        },
+        {
+          "anchor": "L146-L154",
+          "quote": "ACCT-01 Account listing The user can view the accounts available to the current user.\nACCT-02 Account identity Each account is distinguishable by its displayed name/identifier and any supported\naccount type information.\nACCT-03 Account balance Each account exposes a current balance consistent with committed financial operations.\nACCT-04 Account creation Where the live product provides account creation, an authenticated user can provide the\nrequired account information and create an account.\nACCT-05 Account validation Required account fields are validated before an invalid account can be committed.\nACCT-06 Account persistence A successfully created account remains available according to the application's\npersistence model."
+        },
+        {
+          "anchor": "L155-L158",
+          "quote": "ACCT-07 Account state Special states such as frozen or overdraft must be reflected accurately in account\nbehavior and displayed state.\nACCT-08 Account consistency The same account must not display contradictory balances or identity information across\nproduct surfaces."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "account management covers listing, identity, balance, creation where supported, validation, persistence, special states, and cross-surface consistency",
+          "cite": {
+            "anchor": "L146-L158",
+            "quote": "ACCT-01 Account listing The user can view the accounts available to the current user.\nACCT-02 Account identity Each account is distinguishable by its displayed name/identifier and any supported\naccount type information.\nACCT-03 Account balance Each account exposes a current balance consistent with committed financial operations.\nACCT-04 Account creation Where the live product provides account creation, an authenticated user can provide the\nrequired account information and create an account.\nACCT-05 Account validation Required account fields are validated before an invalid account can be committed.\nACCT-06 Account persistence A successfully created account remains available according to the application's\npersistence model.\nACCT-07 Account state Special states such as frozen or overdraft must be reflected accurately in account\nbehavior and displayed state.\nACCT-08 Account consistency The same account must not display contradictory balances or identity information across\nproduct surfaces."
+          }
+        },
+        {
+          "text": "account data includes identifier or name, type, current balance, status, associated user, and transaction history where supported",
+          "cite": {
+            "anchor": "L161-L166",
+            "quote": "Account identifier/name Human-readable identification of the banking account.\nAccount type Classification of the account where supported by the product.\nCurrent balance Current monetary state of the account.\nAccount status Active, frozen, locked or other state where exposed.\nAssociated user User/persona to whom the account belongs.\nTransaction history Financial events associated with the account where supported."
+          }
+        }
+      ],
+      "depends_on_hint": [
+        "n1"
+      ]
+    },
+    {
+      "temp_ref": "n8",
+      "title": "Review transaction history",
+      "description": "An authenticated user can view supported transaction or activity information associated with the current banking state, including each transaction's amount, direction, and relevant account association, and rely on the history to represent only committed financial changes, reconcile with displayed balances, persist according to the product model, and avoid misleading completed records when an operation is rejected.",
+      "summary": "Inspect committed financial activity",
+      "actors": [
+        "authenticated user"
+      ],
+      "value": "Makes financial activity observable and reconcilable with account balances.",
+      "risk": "med",
+      "cite": {
+        "anchor": "L172-L173",
+        "quote": "Users can view supported transaction/activity information associated with their banking\nstate."
+      },
+      "cites": [
+        {
+          "anchor": "L172-L173",
+          "quote": "Users can view supported transaction/activity information associated with their banking\nstate."
+        },
+        {
+          "anchor": "L177-L184",
+          "quote": "TXN-02 Transaction amount A transaction displays the amount associated with the financial event.\nTXN-03 Transaction direction Where relevant, the UI distinguishes money entering versus leaving an account.\nTXN-04 Transaction account A transaction can be associated with the relevant account(s).\nTXN-05 Transaction state Only committed financial changes should be represented as completed financial state.\nTXN-06 Balance relationship Completed transactions must reconcile with the displayed account balances.\nTXN-07 History persistence Committed transaction history should remain available according to the application's\npersistence model.\nTXN-08 Failure handling Rejected operations must not create misleading completed transaction records."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "transaction details include amount, money-in versus money-out direction where relevant, relevant account association, and completed-state representation only for committed financial changes",
+          "cite": {
+            "anchor": "L177-L180",
+            "quote": "TXN-02 Transaction amount A transaction displays the amount associated with the financial event.\nTXN-03 Transaction direction Where relevant, the UI distinguishes money entering versus leaving an account.\nTXN-04 Transaction account A transaction can be associated with the relevant account(s).\nTXN-05 Transaction state Only committed financial changes should be represented as completed financial state."
+          }
+        },
+        {
+          "text": "completed transactions reconcile with balances, transaction history persists according to the application model, and rejected operations do not create misleading completed records",
+          "cite": {
+            "anchor": "L181-L184",
+            "quote": "TXN-06 Balance relationship Completed transactions must reconcile with the displayed account balances.\nTXN-07 History persistence Committed transaction history should remain available according to the application's\npersistence model.\nTXN-08 Failure handling Rejected operations must not create misleading completed transaction records."
+          }
+        }
+      ],
+      "depends_on_hint": [
+        "n1"
+      ]
+    },
+    {
+      "temp_ref": "n9",
+      "title": "Review loan information",
+      "description": "Where the product exposes loan information, an authenticated or administrative user can view the relevant loan or account context and the current user's loan total, including the intentional wrong-loan-total state for error_user, with the loan view staying internally consistent with supporting data in the same view and without corrupting unrelated balances or transactions.",
+      "summary": "View loan totals and their intentional error state",
+      "actors": [
+        "authenticated user",
+        "admin user"
+      ],
+      "value": "Surfaces loan-related totals, including the intentional wrong-loan-total fixture, without corrupting unrelated banking data.",
+      "risk": "med",
+      "cite": {
+        "anchor": "L287-L288",
+        "quote": "The existence of the error_user fixture with the description 'Wrong loan total' establishes that the product\nincludes, or is intended to include, a loan-related total or representation in at least one banking view."
+      },
+      "cites": [
+        {
+          "anchor": "L287-L288",
+          "quote": "The existence of the error_user fixture with the description 'Wrong loan total' establishes that the product\nincludes, or is intended to include, a loan-related total or representation in at least one banking view."
+        },
+        {
+          "anchor": "L290-L298",
+          "quote": "LOAN-01 Loan information Where the product exposes loan information, it should identify the relevant loan/account\ncontext.\nLOAN-02 Loan total The product should display a loan total according to the current user's state.\nLOAN-03 Error fixture error_user must expose the intentionally incorrect loan-total state described by its\ncredential fixture.\nLOAN-04 Consistency Loan totals should be internally consistent with any supporting loan data displayed in the\nsame view.\nLOAN-05 Error isolation An intentional loan-total discrepancy must not incorrectly alter unrelated account\nbalances or transactions."
+        }
+      ],
+      "criteria": [
+        {
+          "text": "loan views identify the relevant loan or account context and display a loan total according to the current user's state",
+          "cite": {
+            "anchor": "L290-L292",
+            "quote": "LOAN-01 Loan information Where the product exposes loan information, it should identify the relevant loan/account\ncontext.\nLOAN-02 Loan total The product should display a loan total according to the current user's state."
+          }
+        },
+        {
+          "text": "error_user exposes the intentionally incorrect loan-total state, while unrelated account balances and transactions remain unaffected",
+          "cite": {
+            "anchor": "L293-L298",
+            "quote": "LOAN-03 Error fixture error_user must expose the intentionally incorrect loan-total state described by its\ncredential fixture.\nLOAN-04 Consistency Loan totals should be internally consistent with any supporting loan data displayed in the\nsame view.\nLOAN-05 Error isolation An intentional loan-total discrepancy must not incorrectly alter unrelated account\nbalances or transactions."
+          }
+        }
+      ],
+      "depends_on_hint": [
+        "n1"
+      ]
+    }
+  ]
+}

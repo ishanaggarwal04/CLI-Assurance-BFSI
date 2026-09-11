@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"An invalid username or password does not grant an authenticated banking experience.","kind":"forbidden-presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"authenticated banking experience after invalid authentication"}}}

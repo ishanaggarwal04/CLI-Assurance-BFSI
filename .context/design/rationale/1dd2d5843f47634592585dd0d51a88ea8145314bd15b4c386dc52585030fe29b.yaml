@@ -1,0 +1,9 @@
+anchor: ac-21
+combinatorial:
+  reason: 'Techniques: eqp for the slow-loading persona partition, state_flow for the in-progress-to-authenticated transition, and negative/error-profile thinking for the exceptional loading behavior that must still resolve correctly. Web form and auth-gated profiles applied. No covering array was needed because slow_user changes the observable outcome and therefore stands as its own scenario.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Techniques: eqp for the slow-loading persona partition, state_flow for the in-progress-to-authenticated transition, and negative/error-profile thinking for the exceptional loading behavior that must still resolve correctly. Web form and auth-gated profiles applied. No covering array was needed because slow_user changes the observable outcome and therefore stands as its own scenario.'

@@ -1,0 +1,9 @@
+anchor: ac-23
+combinatorial:
+  reason: 'Techniques: auth + negative. Minted as a separate security path because AC-23 is a forbidden authenticated-access promise and revisiting previously reached protected banking content after logout changes the outcome from allowed to blocked. Representative persona: standard_user by equivalence partitioning from the documented full-access fixture at L61 and L73; the PRD does not define persona-specific logout behavior. Budget: owner selected no limit, so all 2 candidate scenarios were kept.'
+  strength: 2
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: 'Techniques: auth + negative. Minted as a separate security path because AC-23 is a forbidden authenticated-access promise and revisiting previously reached protected banking content after logout changes the outcome from allowed to blocked. Representative persona: standard_user by equivalence partitioning from the documented full-access fixture at L61 and L73; the PRD does not define persona-specific logout behavior. Budget: owner selected no limit, so all 2 candidate scenarios were kept.'

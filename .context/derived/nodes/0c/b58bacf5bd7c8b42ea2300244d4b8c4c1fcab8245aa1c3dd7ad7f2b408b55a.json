@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A completed transfer provides clear user-visible success feedback.","kind":"presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"clear user-visible success feedback for the completed transfer"}}}

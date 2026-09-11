@@ -1,0 +1,9 @@
+anchor: ac-49
+combinatorial:
+  reason: because money and auth apply, but no combinatorial input matrix was needed because persona is the only outcome-changing class in this baseline path.
+  strength: 3
+deferred_bindings: 0
+expected_how: 'expected_mode: authored'
+profile_family: unspecified
+surface_state: absent
+technique: Applied equivalence partitioning to the standard_user persona as the baseline full-access class; applied auth/permission because the scenario begins with successful authentication; applied state/flow because the path covers landing plus access to dashboard-linked banking information. Risk gate implied strength=3 because money and auth apply, but no combinatorial input matrix was needed because persona is the only outcome-changing class in this baseline path.

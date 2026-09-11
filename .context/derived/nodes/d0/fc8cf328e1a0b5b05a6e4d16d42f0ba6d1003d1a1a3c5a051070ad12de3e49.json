@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A locked_user authentication attempt does not establish the same normal active session access as standard_user.","kind":"forbidden-presence","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"normal active authenticated session equivalent to standard_user access"}}}

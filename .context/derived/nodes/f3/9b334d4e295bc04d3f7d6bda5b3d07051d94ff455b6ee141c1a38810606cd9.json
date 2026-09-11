@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"A completed transfer produces consistent source and destination balance changes.","kind":"propagation","risk":"high","derived":true,"expected_answer":{"operator":"exists","operand":"source and destination balance updates consistent with the committed transfer"}}}

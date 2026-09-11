@@ -1,0 +1,1 @@
+{"label":"ac","content":{"text":"Logging out changes the product state from Authenticated to Logged out.","kind":"state-transition","risk":"high","derived":true,"expected_answer":{"operator":"equals","baseline":"Authenticated","operand":"Logged out"}}}
