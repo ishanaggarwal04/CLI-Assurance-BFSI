@@ -27,7 +27,7 @@ your requirements doc (.md)
 select-tests   which tests to run (changed / all / a list)
         ▼
 run-tests      N runners × M workers
-               seed file + KANE_VAR_* secrets/variables → runtime variables → preflight → kane-cli testrun
+               seed file + mapped secrets/variables → runtime variables → preflight → kane-cli testrun
         ▼
 aggregate      pass/fail counts + Result.md per test in the job summary · all-results artifact
 publish-results  test-results branch: latest/ + last 30 runs
@@ -152,23 +152,37 @@ were ever missing, the test would silently run with `CHANGEME`. When a key is ab
 preflight check stops the run instead and names the missing secret.
 
 **3. Add one repository secret per credential.** Go to Settings → Secrets and variables → Actions
-→ Secrets → *New repository secret*:
-
-| Secret name | Supplies |
-|---|---|
-| `KANE_VAR_APP_USER` | `{{app_user}}` |
-| `KANE_VAR_APP_PASSWORD` | `{{app_password}}` |
+→ Secrets → *New repository secret*. Name the secrets whatever you like, for example `APP_USER`
+and `APP_PASSWORD`.
 
 Or use the GitHub CLI. Leaving out `--body` makes it prompt for the value, so the value doesn't
 end up in your shell history:
 
 ```bash
-gh secret set KANE_VAR_APP_USER
-gh secret set KANE_VAR_APP_PASSWORD
-gh variable set KANE_VAR_LOGIN_URL --body "https://staging.your-app.com/login"   # non-secret → Actions variable
+gh secret set APP_USER
+gh secret set APP_PASSWORD
+gh variable set LOGIN_URL --body "https://staging.your-app.com/login"   # non-secret → Actions variable
 ```
 
-**4. Run it.** On the runner, `runtime.json` ends up as:
+**4. Map each secret to its placeholder** in the workflow. In `kane-assurance.yml`, find the
+*Build run-time variables file* step and uncomment its `env:` block, one line per value:
+
+```yaml
+      - name: Build run-time variables file
+        env:
+          KANE_SECRET_APP_USER: ${{ secrets.APP_USER }}           # -> {{app_user}}
+          KANE_SECRET_APP_PASSWORD: ${{ secrets.APP_PASSWORD }}   # -> {{app_password}}
+          KANE_VAR_LOGIN_URL: ${{ vars.LOGIN_URL }}               # -> {{login_url}}
+        run: |
+          …
+```
+
+Each secret is named explicitly on purpose. A workflow that passes *all* secrets to a step
+(`toJSON(secrets)`) matches a known exfiltration pattern: GitHub flags the file as *"may be
+malicious"* and won't run it until someone approves it. Explicit lines also make the workflow
+file the single list of the secrets the pipeline uses.
+
+**5. Run it.** On the runner, `runtime.json` ends up as:
 
 ```json
 {
@@ -191,9 +205,11 @@ with password bank_sauce"), swap the literals for placeholders:
 + Open {{login_url}} in the browser and sign in as {{frozen_user}} with password {{frozen_password}} …
 ```
 
-Then remove those values from the seed file and add them as `KANE_VAR_FROZEN_USER` /
-`KANE_VAR_FROZEN_PASSWORD` secrets. On the next run, the edited step and every step after it in
-that file are re-authored, because kane-cli only replays a step whose text is unchanged.
+Then remove those values from the seed file, add them as secrets, and map them:
+`KANE_SECRET_FROZEN_USER: ${{ secrets.FROZEN_USER }}` and
+`KANE_SECRET_FROZEN_PASSWORD: ${{ secrets.FROZEN_PASSWORD }}`. On the next run, the edited step
+and every step after it in that file are re-authored, because kane-cli only replays a step
+whose text is unchanged.
 
 To get placeholders from the start, tell the designer before you design. Put this in
 `.testmuai/context.md`:
@@ -213,7 +229,7 @@ as a confusing failure in the middle of a test. Each runner therefore scans its 
 starting a browser and fails straight away:
 
 ```
-Error: {{app_password}} has no value. Add it to kane-variables.seed.json, or as a repository secret/variable named KANE_VAR_APP_PASSWORD.
+Error: {{app_password}} has no value. Add it to kane-variables.seed.json, or map a secret to it as KANE_SECRET_APP_PASSWORD in the env of the 'Build run-time variables file' step.
 ```
 
 The check skips names a test defines itself, such as `save the response as order` →
@@ -223,8 +239,8 @@ The check skips names a test defines itself, such as `save the response as order
 
 To keep different credentials for staging and production, use GitHub **Environments**:
 
-1. Settings → Environments → create `staging` and `production`. Add the same `KANE_VAR_*` secret
-   names to each, with that environment's values.
+1. Settings → Environments → create `staging` and `production`. Add the same secret names
+   (`APP_USER`, `APP_PASSWORD`, …) to each, with that environment's values.
 2. In the workflow, add an `environment` input and reference it in the `run-tests` job:
 
 ```yaml
@@ -241,15 +257,14 @@ jobs:
     environment: ${{ inputs.environment || 'staging' }}
 ```
 
-The environment's secrets override repository secrets that have the same name, and the variables
-step picks them up with no other changes.
+The environment's secrets override repository secrets that have the same name, so the same
+`KANE_SECRET_*` mapping lines pick up the right values with no other changes.
 
 ### Rules and caveats
 
-- **Names:** GitHub stores secret and variable names in upper case, and the pipeline lower-cases
-  them. Placeholders you supply through `KANE_VAR_*` must therefore be lower-case `snake_case`
-  (`{{app_password}}`, not `{{appPassword}}`). Nested values (`{{tester.email}}`) can only come
-  from the seed file.
+- **Names:** the pipeline lower-cases whatever follows `KANE_SECRET_` / `KANE_VAR_`, so
+  placeholders you supply this way must be lower-case `snake_case` (`{{app_password}}`, not
+  `{{appPassword}}`). Nested values (`{{tester.email}}`) can only come from the seed file.
 - **Evidence shows the screen.** Password fields are obscured, but anything typed into a visible
   field, such as a username or an account number, appears in screenshots in the evidence packs.
 - **The `test-results` branch is part of your repo.** Everyone with read access can see it. For a
@@ -330,7 +345,7 @@ A run goes **red** only when the pipeline itself couldn't do its job:
 | Red step | Meaning | Fix |
 |---|---|---|
 | *Login* | `LT_USERNAME` / `LT_ACCESS_KEY` are missing or wrong | Check the two platform secrets |
-| *Preflight* | A test uses a `{{placeholder}}` that nothing supplies | Add the `KANE_VAR_<NAME>` secret the error names |
+| *Preflight* | A test uses a `{{placeholder}}` that nothing supplies | Add the secret and the `KANE_SECRET_<NAME>` mapping the error names |
 | *Run this shard* | `kane-cli testrun` stopped before it finished (it never reported `testrun_done`) | Read the log above the error |
 | *Resolve test scope* | `scope=select` listed a file that doesn't exist | Fix the path |
 
