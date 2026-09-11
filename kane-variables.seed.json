@@ -14,5 +14,7 @@
   "overdraft_password": { "value": "bank_sauce" },
   "slow_password": { "value": "bank_sauce" },
   "error_password": { "value": "bank_sauce" },
-  "admin_password": { "value": "admin_sauce" }
+  "admin_password": { "value": "admin_sauce" },
+  "invalid_username": { "value": "not_a_real_user" },
+  "invalid_password": { "value": "wrong_password" }
 }
