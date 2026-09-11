@@ -56,7 +56,7 @@ produces. CI only runs the committed tests. It never designs or rewrites them.
 3. **Design tests** for your app locally. See [Designing tests](#designing-tests-local). Make
    sure credentials and environment URLs appear as `{{placeholders}}`, not literal values.
 4. **Supply every placeholder**: non-secret values in `kane-variables.seed.json`, private ones as
-   `KANE_VAR_<NAME>` repository secrets. See [Credentials and test data](#credentials-and-test-data).
+   repository secrets mapped in the workflow. See [Credentials and test data](#credentials-and-test-data).
 5. **Allow the workflow to push** the `test-results` branch (Settings → Actions → General →
    Workflow permissions → *Read and write permissions*).
 6. **Commit and push** the `_test.md` files. The push runs the tests you changed. Or go to
@@ -99,12 +99,13 @@ reads. The sources are merged in this order, and a later source wins:
 | # | Source | Becomes | Use it for |
 |---|---|---|---|
 | 1 | `kane-variables.seed.json` (committed) | `{{name}}` as written | Values that aren't sensitive: public URLs, product names, search terms, deliberately invalid credentials |
-| 2 | Actions **variables** named `KANE_VAR_<NAME>` | `{{name}}` | Per-repo config you don't want in code but that isn't secret, such as a staging URL |
-| 3 | Actions **secrets** named `KANE_VAR_<NAME>` | `{{name}}`, marked `secret: true` | Usernames, passwords, API tokens, OTP seeds |
+| 2 | `KANE_VAR_<NAME>: ${{ vars.X }}` mapped in the workflow | `{{name}}` | Per-repo config you don't want in code but that isn't secret, such as a staging URL |
+| 3 | `KANE_SECRET_<NAME>: ${{ secrets.X }}` mapped in the workflow | `{{name}}`, marked `secret: true` | Usernames, passwords, API tokens, OTP seeds |
 | 4 | The `login_url` workflow input | `{{login_url}}` and `{{base_url}}` | A one-off run against a different environment |
 
-`<NAME>` is the placeholder name in upper case: `KANE_VAR_STANDARD_PASSWORD` supplies
-`{{standard_password}}`. The run log lists which placeholders were supplied and marks the
+`<NAME>` is the placeholder name in upper case: `KANE_SECRET_APP_PASSWORD` supplies
+`{{app_password}}`. Empty values are skipped, so a secret that isn't set never overwrites a
+value from the seed file. The run log lists which placeholders were supplied and marks the
 secret ones. Values are never printed.
 
 ### Option A: public or non-sensitive values in the seed file

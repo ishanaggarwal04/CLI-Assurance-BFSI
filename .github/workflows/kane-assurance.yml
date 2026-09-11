@@ -190,31 +190,35 @@ jobs:
           path: .ci
 
       # Builds .testmuai/variables/runtime.json, which kane-cli reads for every
-      # {{variable}} in the tests. Sources, later wins:
+      # {{placeholder}} in the tests. Sources, later wins:
       #   1. $VARIABLES_SEED (committed, non-sensitive values)
-      #   2. Actions *variables* named KANE_VAR_<NAME>  -> {{name}}
-      #   3. Actions *secrets*   named KANE_VAR_<NAME>  -> {{name}}, secret: true
+      #   2. env entries named KANE_VAR_<NAME>     -> {{name}}
+      #   3. env entries named KANE_SECRET_<NAME>  -> {{name}}, secret: true (masked)
       #   4. the login_url workflow input (login_url + base_url)
-      # KANE_VAR_STANDARD_PASSWORD, for example, fills {{standard_password}}.
+      # Empty values are ignored, so an unset secret never blanks out a value.
       - name: Build run-time variables file
-        env:
-          ALL_SECRETS: ${{ toJSON(secrets) }}
-          ALL_VARS: ${{ toJSON(vars) }}
+        # Map your GitHub secrets / variables to {{placeholders}} here, one line
+        # each (see README → Credentials and test data). For example:
+        #
+        # env:
+        #   KANE_SECRET_APP_USER: ${{ secrets.APP_USER }}           # -> {{app_user}}
+        #   KANE_SECRET_APP_PASSWORD: ${{ secrets.APP_PASSWORD }}   # -> {{app_password}}
+        #   KANE_VAR_LOGIN_URL: ${{ vars.LOGIN_URL }}               # -> {{login_url}}
         run: |
           set -euo pipefail
           mkdir -p .testmuai/variables
           SEED="$VARIABLES_SEED"
           [ -f "$SEED" ] || SEED=/dev/null
           jq -n --slurpfile seed "$SEED" --arg url "$LOGIN_URL" '
-            def kane_vars($src; $secret):
-              $src | to_entries
-              | map(select(.key | startswith("KANE_VAR_")))
-              | map({ key: (.key | ltrimstr("KANE_VAR_") | ascii_downcase),
+            def from_env($prefix; $secret):
+              $ENV | to_entries
+              | map(select((.key | startswith($prefix)) and .value != ""))
+              | map({ key: (.key | ltrimstr($prefix) | ascii_downcase),
                       value: { value: .value, secret: $secret } })
               | from_entries;
             ($seed[0] // {})
-            + kane_vars($ENV.ALL_VARS | fromjson; false)
-            + kane_vars($ENV.ALL_SECRETS | fromjson; true)
+            + from_env("KANE_VAR_"; false)
+            + from_env("KANE_SECRET_"; true)
             | if $url != "" then .login_url.value = $url | .base_url.value = $url else . end
           ' > .testmuai/variables/runtime.json
           echo "Variables available to tests (values not shown):"
@@ -257,7 +261,7 @@ jobs:
             for v in $used; do
               jq -e --arg k "$v" 'has($k)' .testmuai/variables/runtime.json > /dev/null && continue
               grep -qiE "\bas +$v\b|^ *$v *:" "$f" && continue
-              echo "::error file=$f::{{$v}} has no value. Add it to $VARIABLES_SEED, or as a repository secret/variable named KANE_VAR_${v^^}."
+              echo "::error file=$f::{{$v}} has no value. Add it to $VARIABLES_SEED, or map a secret to it as KANE_SECRET_${v^^} in the env of the 'Build run-time variables file' step."
               missing=1
             done
           done < shard_files.txt
